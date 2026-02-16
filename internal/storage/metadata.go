@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 	"time"
 
 	"golang.org/x/crypto/hkdf"
@@ -94,21 +93,23 @@ func saveEncryptedMetadata(path string, storageKey []byte, dropID string, payloa
 }
 
 // loadEncryptedMetadata reads and decrypts metadata from disk.
-// It supports backward compatibility with old plaintext format.
+// Only the encrypted JSON envelope format is supported.
 func loadEncryptedMetadata(path string, storageKey []byte, dropID string) (*MetadataPayload, error) {
 	data, err := os.ReadFile(path) // #nosec G304 -- path built from validated drop ID
 	if err != nil {
 		return nil, fmt.Errorf("failed to read metadata: %w", err)
 	}
 
-	// Try to parse as encrypted JSON envelope first
 	var envelope EncryptedMetadata
-	if err := json.Unmarshal(data, &envelope); err == nil && envelope.Version > 0 {
-		return decryptMetadataEnvelope(&envelope, storageKey, dropID)
+	if err := json.Unmarshal(data, &envelope); err != nil {
+		return nil, fmt.Errorf("failed to parse metadata envelope: %w", err)
 	}
 
-	// Backward compatibility: parse old plaintext format
-	return parseLegacyMetadata(string(data))
+	if envelope.Version <= 0 {
+		return nil, fmt.Errorf("invalid metadata version: %d", envelope.Version)
+	}
+
+	return decryptMetadataEnvelope(&envelope, storageKey, dropID)
 }
 
 func decryptMetadataEnvelope(envelope *EncryptedMetadata, storageKey []byte, dropID string) (*MetadataPayload, error) {
@@ -151,23 +152,6 @@ func decryptMetadataEnvelope(envelope *EncryptedMetadata, storageKey []byte, dro
 	}
 
 	return &payload, nil
-}
-
-// parseLegacyMetadata parses the old plaintext "key=value" format.
-func parseLegacyMetadata(data string) (*MetadataPayload, error) {
-	payload := &MetadataPayload{}
-	for _, line := range strings.Split(data, "\n") {
-		if strings.HasPrefix(line, "filename=") {
-			payload.Filename = strings.TrimPrefix(line, "filename=")
-		} else if strings.HasPrefix(line, "receipt=") {
-			payload.Receipt = strings.TrimPrefix(line, "receipt=")
-		} else if strings.HasPrefix(line, "timestamp=") {
-			var ts int64
-			_, _ = fmt.Sscanf(line, "timestamp=%d", &ts)
-			payload.TimestampHour = ts
-		}
-	}
-	return payload, nil
 }
 
 func hexDecode(s string) ([]byte, error) {

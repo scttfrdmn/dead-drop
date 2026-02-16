@@ -52,30 +52,37 @@ func TestSaveLoadEncryptedMetadata_RoundTrip(t *testing.T) {
 	}
 }
 
-func TestLoadEncryptedMetadata_LegacyFormat(t *testing.T) {
+func TestLoadEncryptedMetadata_RejectsPlaintext(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "meta")
 	key := testStorageKey(t)
 	dropID := "abcdef0123456789abcdef0123456789"
 
-	legacy := "filename=secret.pdf\nreceipt=r123\ntimestamp=1700000000\n"
-	if err := os.WriteFile(path, []byte(legacy), 0600); err != nil {
+	plaintext := "filename=secret.pdf\nreceipt=r123\ntimestamp=1700000000\n"
+	if err := os.WriteFile(path, []byte(plaintext), 0600); err != nil {
 		t.Fatal(err)
 	}
 
-	loaded, err := loadEncryptedMetadata(path, key, dropID)
-	if err != nil {
-		t.Fatalf("load error: %v", err)
+	_, err := loadEncryptedMetadata(path, key, dropID)
+	if err == nil {
+		t.Error("expected error for plaintext metadata, got nil")
+	}
+}
+
+func TestLoadEncryptedMetadata_RejectsVersionZero(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "meta")
+	key := testStorageKey(t)
+	dropID := "abcdef0123456789abcdef0123456789"
+
+	spoofed := `{"version":0,"encrypted_data":"deadbeef","nonce":"aabbccdd"}`
+	if err := os.WriteFile(path, []byte(spoofed), 0600); err != nil {
+		t.Fatal(err)
 	}
 
-	if loaded.Filename != "secret.pdf" {
-		t.Errorf("Filename = %q, want %q", loaded.Filename, "secret.pdf")
-	}
-	if loaded.Receipt != "r123" {
-		t.Errorf("Receipt = %q, want %q", loaded.Receipt, "r123")
-	}
-	if loaded.TimestampHour != 1700000000 {
-		t.Errorf("TimestampHour = %d, want 1700000000", loaded.TimestampHour)
+	_, err := loadEncryptedMetadata(path, key, dropID)
+	if err == nil {
+		t.Error("expected error for version 0 metadata, got nil")
 	}
 }
 
@@ -136,34 +143,20 @@ func TestRoundToHour_ExactHour(t *testing.T) {
 	}
 }
 
-func TestParseLegacyMetadata(t *testing.T) {
-	data := "filename=report.pdf\nreceipt=abc123\ntimestamp=1700000000\n"
-	payload, err := parseLegacyMetadata(data)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if payload.Filename != "report.pdf" {
-		t.Errorf("Filename = %q", payload.Filename)
-	}
-	if payload.Receipt != "abc123" {
-		t.Errorf("Receipt = %q", payload.Receipt)
-	}
-	if payload.TimestampHour != 1700000000 {
-		t.Errorf("TimestampHour = %d", payload.TimestampHour)
-	}
-}
+func TestLoadEncryptedMetadata_RejectsNegativeVersion(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "meta")
+	key := testStorageKey(t)
+	dropID := "abcdef0123456789abcdef0123456789"
 
-func TestParseLegacyMetadata_PartialData(t *testing.T) {
-	data := "filename=test.txt\n"
-	payload, err := parseLegacyMetadata(data)
-	if err != nil {
+	spoofed := `{"version":-1,"encrypted_data":"deadbeef","nonce":"aabbccdd"}`
+	if err := os.WriteFile(path, []byte(spoofed), 0600); err != nil {
 		t.Fatal(err)
 	}
-	if payload.Filename != "test.txt" {
-		t.Errorf("Filename = %q", payload.Filename)
-	}
-	if payload.Receipt != "" {
-		t.Errorf("Receipt should be empty, got %q", payload.Receipt)
+
+	_, err := loadEncryptedMetadata(path, key, dropID)
+	if err == nil {
+		t.Error("expected error for negative version metadata, got nil")
 	}
 }
 
