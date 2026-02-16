@@ -31,6 +31,7 @@ type Manager struct {
 	Quota         *QuotaManager
 	Locks         *DropLockManager
 	SecureDelete  bool
+	IsProtected   func(id string) bool
 }
 
 // NewManager creates a new storage manager.

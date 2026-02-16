@@ -43,6 +43,11 @@ func (m *Manager) cleanupExpiredDrops(maxAge time.Duration) error {
 
 		dropID := entry.Name()
 
+		// Skip protected drops (e.g., honeypots)
+		if m.IsProtected != nil && m.IsProtected(dropID) {
+			continue
+		}
+
 		// Skip drops that are currently locked (being retrieved)
 		if !m.Locks.TryLock(dropID) {
 			continue

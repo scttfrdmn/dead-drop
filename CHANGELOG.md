@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Honeypot/canary drop detection with configurable alert webhook (closes #3)
+- `honeypots_enabled`, `honeypot_count`, `alert_webhook` config options
+- Honeypot drops are auto-generated on startup, indistinguishable from real drops, and exempt from cleanup
+
 ### Changed
 - Stored encrypted files renamed from `file.enc` to `data` to eliminate filename leakage (closes #2)
 - Client-side encryption no longer appends `.enc` to filenames sent to server

@@ -39,6 +39,9 @@ type SecurityConfig struct {
 	MaxStorageGB        float64 `yaml:"max_storage_gb"`
 	MaxDrops            int     `yaml:"max_drops"`
 	MasterKeyEnv        string  `yaml:"master_key_env"`
+	HoneypotsEnabled    bool    `yaml:"honeypots_enabled"`
+	HoneypotCount       int     `yaml:"honeypot_count"`
+	AlertWebhook        string  `yaml:"alert_webhook"`
 }
 
 // LoggingConfig holds logging settings

@@ -18,6 +18,7 @@ import (
 
 	"github.com/scttfrdmn/dead-drop/internal/config"
 	"github.com/scttfrdmn/dead-drop/internal/crypto"
+	"github.com/scttfrdmn/dead-drop/internal/honeypot"
 	"github.com/scttfrdmn/dead-drop/internal/metadata"
 	"github.com/scttfrdmn/dead-drop/internal/ratelimit"
 	"github.com/scttfrdmn/dead-drop/internal/storage"
@@ -32,6 +33,7 @@ type Server struct {
 	config     *config.Config
 	validator  *validation.Validator
 	scrubber   *metadata.Scrubber
+	honeypot   *honeypot.Manager
 	tlsEnabled bool
 }
 
@@ -78,6 +80,22 @@ func main() {
 	// Configure secure delete from config
 	storageManager.SecureDelete = cfg.Security.SecureDelete
 
+	// Initialize honeypots before quota so they're counted in baseline
+	var honeypotMgr *honeypot.Manager
+	if cfg.Security.HoneypotsEnabled {
+		var hpErr error
+		honeypotMgr, hpErr = honeypot.NewManager(cfg.Server.StorageDir, cfg.Security.AlertWebhook)
+		if hpErr != nil {
+			log.Fatalf("Failed to initialize honeypot manager: %v", hpErr)
+		}
+		if cfg.Security.HoneypotCount > 0 {
+			if hpErr = honeypotMgr.GenerateHoneypots(cfg.Security.HoneypotCount, storageManager); hpErr != nil {
+				log.Fatalf("Failed to generate honeypots: %v", hpErr)
+			}
+		}
+		storageManager.IsProtected = honeypotMgr.IsHoneypot
+	}
+
 	// Configure disk quotas if set
 	if cfg.Security.MaxStorageGB > 0 || cfg.Security.MaxDrops > 0 {
 		quota, err := storage.NewQuotaManager(cfg.Server.StorageDir, cfg.Security.MaxStorageGB, cfg.Security.MaxDrops)
@@ -94,6 +112,7 @@ func main() {
 		config:     cfg,
 		validator:  validation.NewValidator(cfg.Server.MaxUploadMB),
 		scrubber:   metadata.NewScrubber(),
+		honeypot:   honeypotMgr,
 		tlsEnabled: tlsEnabled,
 	}
 
@@ -303,6 +322,11 @@ func (s *Server) handleRetrieve(w http.ResponseWriter, r *http.Request) {
 	if !s.storage.Receipts.Validate(dropID, receipt) {
 		http.Error(w, "Invalid receipt", http.StatusForbidden)
 		return
+	}
+
+	// Honeypot detection: alert but still serve decoy (indistinguishable)
+	if s.honeypot != nil && s.honeypot.IsHoneypot(dropID) {
+		s.honeypot.Alert(dropID, r.RemoteAddr)
 	}
 
 	filename, reader, err := s.storage.GetDrop(dropID)

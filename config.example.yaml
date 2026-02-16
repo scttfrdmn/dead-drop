@@ -49,6 +49,11 @@ security:
   # Example: master_key_env: "DEAD_DROP_MASTER_KEY"
   # master_key_env: ""
 
+  # Honeypot/canary drops: auto-generated decoy drops that trigger alerts on access
+  # honeypots_enabled: true
+  # honeypot_count: 5
+  # alert_webhook: "https://your-webhook-endpoint.example.com/alert"
+
 # Logging settings
 logging:
   # Enable startup/configuration logging
