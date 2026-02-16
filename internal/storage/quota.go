@@ -68,6 +68,13 @@ func (qm *QuotaManager) Reserve(bytes int64) error {
 	return nil
 }
 
+// Stats returns current storage usage and drop count.
+func (qm *QuotaManager) Stats() (totalBytes int64, dropCount int) {
+	qm.mu.Lock()
+	defer qm.mu.Unlock()
+	return qm.totalBytes, qm.dropCount
+}
+
 // Release frees reserved space when a drop is deleted.
 func (qm *QuotaManager) Release(bytes int64) {
 	qm.mu.Lock()

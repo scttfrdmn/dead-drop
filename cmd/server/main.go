@@ -21,6 +21,7 @@ import (
 	"github.com/scttfrdmn/dead-drop/internal/crypto"
 	"github.com/scttfrdmn/dead-drop/internal/honeypot"
 	"github.com/scttfrdmn/dead-drop/internal/metadata"
+	"github.com/scttfrdmn/dead-drop/internal/monitoring"
 	"github.com/scttfrdmn/dead-drop/internal/ratelimit"
 	"github.com/scttfrdmn/dead-drop/internal/storage"
 	"github.com/scttfrdmn/dead-drop/internal/validation"
@@ -35,6 +36,7 @@ type Server struct {
 	validator  *validation.Validator
 	scrubber   *metadata.Scrubber
 	honeypot   *honeypot.Manager
+	metrics    *monitoring.Metrics
 	tlsEnabled bool
 }
 
@@ -147,6 +149,7 @@ func main() {
 		validator:  validation.NewValidator(cfg.Server.MaxUploadMB),
 		scrubber:   metadata.NewScrubber(),
 		honeypot:   honeypotMgr,
+		metrics:    monitoring.NewMetrics(),
 		tlsEnabled: tlsEnabled,
 	}
 
@@ -184,6 +187,22 @@ func main() {
 	mux.HandleFunc("/submit", wrap(server.securityHeaders(limiter.Middleware(server.handleSubmit))))
 	mux.HandleFunc("/retrieve", wrap(server.securityHeaders(limiter.Middleware(server.handleRetrieve))))
 
+	// Metrics endpoint
+	if cfg.Server.Metrics.Enabled {
+		var statsFunc monitoring.StatsFunc
+		if storageManager.Quota != nil {
+			statsFunc = func() (int64, int) {
+				return storageManager.Quota.Stats()
+			}
+		}
+		metricsHandler := server.metrics.Handler(statsFunc)
+		if cfg.Server.Metrics.LocalhostOnly {
+			mux.HandleFunc("/metrics", server.localhostOnly(metricsHandler))
+		} else {
+			mux.HandleFunc("/metrics", metricsHandler)
+		}
+	}
+
 	if cfg.Logging.Startup {
 		log.Printf("Dead drop server starting on %s", cfg.Server.Listen)
 		log.Printf("Storage directory: %s", cfg.Server.StorageDir)
@@ -214,6 +233,23 @@ func main() {
 
 // torOnlyMiddleware rejects connections not originating from a loopback address.
 func (s *Server) torOnlyMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		host, _, err := net.SplitHostPort(r.RemoteAddr)
+		if err != nil {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+		ip := net.ParseIP(host)
+		if ip == nil || !ip.IsLoopback() {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+		next(w, r)
+	}
+}
+
+// localhostOnly rejects connections not originating from a loopback address.
+func (s *Server) localhostOnly(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		host, _, err := net.SplitHostPort(r.RemoteAddr)
 		if err != nil {
@@ -341,6 +377,8 @@ func (s *Server) handleSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	s.metrics.RecordUpload()
+
 	if s.config.Logging.Operations {
 		// Drop ID is validated hex, safe to log
 		log.Printf("Drop saved: %s", drop.ID) // #nosec G706 -- drop.ID is generated hex
@@ -401,6 +439,8 @@ func (s *Server) handleRetrieve(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/octet-stream")
 
 	_, _ = io.Copy(w, reader)
+
+	s.metrics.RecordDownload()
 
 	// Delete after retrieval if configured
 	if s.config.Security.DeleteAfterRetrieve {

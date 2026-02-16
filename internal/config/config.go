@@ -17,10 +17,17 @@ type Config struct {
 
 // ServerConfig holds server settings
 type ServerConfig struct {
-	Listen      string    `yaml:"listen"`
-	StorageDir  string    `yaml:"storage_dir"`
-	MaxUploadMB int64     `yaml:"max_upload_mb"`
-	TLS         TLSConfig `yaml:"tls"`
+	Listen      string        `yaml:"listen"`
+	StorageDir  string        `yaml:"storage_dir"`
+	MaxUploadMB int64         `yaml:"max_upload_mb"`
+	TLS         TLSConfig     `yaml:"tls"`
+	Metrics     MetricsConfig `yaml:"metrics"`
+}
+
+// MetricsConfig holds metrics endpoint settings
+type MetricsConfig struct {
+	Enabled       bool `yaml:"enabled"`
+	LocalhostOnly bool `yaml:"localhost_only"`
 }
 
 // TLSConfig holds TLS certificate settings
