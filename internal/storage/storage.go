@@ -253,6 +253,48 @@ func (m *Manager) GetDropMetadata(id string) (*MetadataPayload, error) {
 	return loadEncryptedMetadata(metaPath, m.EncryptionKey, id)
 }
 
+// deleteIfExpired atomically checks whether a drop is expired and deletes it
+// under a single write lock, preventing TOCTOU races with concurrent retrievals.
+// Returns true if the drop was deleted, false if it was skipped (locked, not expired, or unreadable).
+func (m *Manager) deleteIfExpired(id string, maxAge time.Duration, now time.Time) (bool, error) {
+	// Skip drops that are currently locked (being retrieved)
+	if !m.Locks.TryLock(id) {
+		return false, nil
+	}
+	defer m.Locks.Unlock(id)
+
+	// Load metadata to check timestamp (read directly, not via GetDropMetadata,
+	// since we already hold the write lock)
+	metaPath := filepath.Join(m.StorageDir, id, "meta")
+	payload, err := loadEncryptedMetadata(metaPath, m.EncryptionKey, id)
+	if err != nil {
+		return false, nil
+	}
+
+	dropTime := time.Unix(payload.TimestampHour, 0)
+	if now.Sub(dropTime) <= maxAge {
+		return false, nil
+	}
+
+	// Drop is expired — delete it while still holding the write lock
+	dropDir := filepath.Join(m.StorageDir, id)
+
+	if m.Quota != nil {
+		filePath := filepath.Join(dropDir, "data")
+		if _, statErr := os.Stat(filePath); os.IsNotExist(statErr) {
+			filePath = filepath.Join(dropDir, "file.enc")
+		}
+		if info, statErr := os.Stat(filePath); statErr == nil {
+			m.Quota.Release(info.Size())
+		}
+	}
+
+	if m.SecureDelete {
+		return true, SecureDeleteDir(dropDir)
+	}
+	return true, os.RemoveAll(dropDir)
+}
+
 // DeleteDrop removes a drop
 func (m *Manager) DeleteDrop(id string) error {
 	// SECURITY: Validate drop ID to prevent path traversal

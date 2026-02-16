@@ -63,26 +63,13 @@ func (m *Manager) cleanupExpiredDrops(maxAge time.Duration) error {
 			continue
 		}
 
-		// Skip drops that are currently locked (being retrieved)
-		if !m.Locks.TryLock(dropID) {
-			continue
-		}
-		// We got the write lock — release it since DeleteDrop will acquire it
-		m.Locks.Unlock(dropID)
-
-		// Load encrypted metadata to get timestamp
-		payload, err := m.GetDropMetadata(dropID)
+		// Atomically check expiry and delete under a single write lock
+		// to prevent TOCTOU races with concurrent retrievals
+		deleted, err := m.deleteIfExpired(dropID, maxAge, now)
 		if err != nil {
-			continue
-		}
-
-		dropTime := time.Unix(payload.TimestampHour, 0)
-		if now.Sub(dropTime) > maxAge {
-			if err := m.DeleteDrop(dropID); err != nil {
-				log.Printf("Failed to delete expired drop %s: %v", dropID, err)
-			} else {
-				deletedCount++
-			}
+			log.Printf("Failed to delete expired drop %s: %v", dropID, err)
+		} else if deleted {
+			deletedCount++
 		}
 	}
 

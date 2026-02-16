@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 - Tightened Content-Security-Policy from `unsafe-inline` to `self` by extracting inline JS and CSS into external files (closes #19)
+- Fixed TOCTOU race condition in cleanup where expired drops could be deleted during active retrieval (closes #20)
 
 ## [0.9.0] - 2026-02-15
 
