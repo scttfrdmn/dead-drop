@@ -138,7 +138,9 @@ func submitFile(config Config) error {
 		return fmt.Errorf("failed to write file data: %w", err)
 	}
 
-	writer.Close()
+	if err := writer.Close(); err != nil {
+		return fmt.Errorf("failed to close multipart writer: %w", err)
+	}
 
 	// Create HTTP client
 	client := &http.Client{}
@@ -177,7 +179,7 @@ func submitFile(config Config) error {
 	fmt.Printf("Server: %s\n", config.ServerURL)
 
 	// Send request
-	resp, err := client.Do(req)
+	resp, err := client.Do(req) // #nosec G704 -- server URL is user-provided by design
 	if err != nil {
 		return fmt.Errorf("failed to send request: %w", err)
 	}

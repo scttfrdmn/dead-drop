@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"os"
 )
 
 // ReceiptManager generates and validates HMAC-based receipts.
@@ -33,22 +32,4 @@ func (rm *ReceiptManager) Generate(dropID string) string {
 func (rm *ReceiptManager) Validate(dropID, receipt string) bool {
 	expected := rm.Generate(dropID)
 	return ConstantTimeCompare(expected, receipt)
-}
-
-// loadOrGenerateReceiptKey loads an existing key file or creates a new 32-byte key.
-func loadOrGenerateReceiptKey(keyPath string) ([]byte, error) {
-	if data, err := os.ReadFile(keyPath); err == nil && len(data) == 32 {
-		return data, nil
-	}
-
-	key, err := SecureRandom(32)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := os.WriteFile(keyPath, key, 0600); err != nil {
-		return nil, fmt.Errorf("failed to save receipt key: %w", err)
-	}
-
-	return key, nil
 }

@@ -89,7 +89,7 @@ func main() {
 	}
 
 	// Disable default logging for anonymity
-	http.DefaultServeMux = http.NewServeMux()
+	mux := http.NewServeMux()
 
 	// SECURITY: Rate limiting to prevent DoS and enumeration attacks
 	rateLimit := cfg.Security.RateLimitPerMin
@@ -99,9 +99,9 @@ func main() {
 	limiter := ratelimit.NewLimiter(rateLimit, 1*time.Minute)
 
 	// Routes with rate limiting and security headers
-	http.HandleFunc("/", securityHeaders(server.handleIndex))
-	http.HandleFunc("/submit", securityHeaders(limiter.Middleware(server.handleSubmit)))
-	http.HandleFunc("/retrieve", securityHeaders(limiter.Middleware(server.handleRetrieve)))
+	mux.HandleFunc("/", securityHeaders(server.handleIndex))
+	mux.HandleFunc("/submit", securityHeaders(limiter.Middleware(server.handleSubmit)))
+	mux.HandleFunc("/retrieve", securityHeaders(limiter.Middleware(server.handleRetrieve)))
 
 	if cfg.Logging.Startup {
 		log.Printf("Dead drop server starting on %s", cfg.Server.Listen)
@@ -111,7 +111,14 @@ func main() {
 		log.Printf("Secure delete: %v", cfg.Security.SecureDelete)
 	}
 
-	log.Fatal(http.ListenAndServe(cfg.Server.Listen, nil))
+	srv := &http.Server{
+		Addr:         cfg.Server.Listen,
+		Handler:      mux,
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 60 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
+	log.Fatal(srv.ListenAndServe())
 }
 
 // securityHeaders wraps a handler with security response headers.
@@ -159,7 +166,7 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html")
-	w.Write(data)
+	_, _ = w.Write(data)
 }
 
 func (s *Server) handleSubmit(w http.ResponseWriter, r *http.Request) {
@@ -222,12 +229,13 @@ func (s *Server) handleSubmit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if s.config.Logging.Operations {
-		log.Printf("Drop saved: %s", drop.ID)
+		// Drop ID is validated hex, safe to log
+		log.Printf("Drop saved: %s", drop.ID) // #nosec G706 -- drop.ID is generated hex
 	}
 
 	// Return drop_id, receipt, and file hash
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
+	_ = json.NewEncoder(w).Encode(map[string]string{
 		"drop_id":   drop.ID,
 		"receipt":   drop.Receipt,
 		"file_hash": drop.FileHash,
@@ -274,16 +282,17 @@ func (s *Server) handleRetrieve(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filename))
 	w.Header().Set("Content-Type", "application/octet-stream")
 
-	io.Copy(w, reader)
+	_, _ = io.Copy(w, reader)
 
 	// Delete after retrieval if configured
 	if s.config.Security.DeleteAfterRetrieve {
 		if err := s.storage.DeleteDrop(dropID); err != nil {
 			if s.config.Logging.Errors {
-				log.Printf("Failed to delete drop %s after retrieval: %v", dropID, err)
+				// dropID is validated 32-char hex at this point
+				log.Printf("Failed to delete drop after retrieval: %v", err) // #nosec G706
 			}
 		} else if s.config.Logging.Operations {
-			log.Printf("Drop %s deleted after retrieval", dropID)
+			log.Printf("Drop deleted after retrieval") // #nosec G706
 		}
 	}
 }

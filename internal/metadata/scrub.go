@@ -169,8 +169,8 @@ func (s *Scrubber) IsMetadataPresent(data []byte) bool {
 
 	// Check for PNG text chunks
 	if bytes.Contains(data, []byte("tEXt")) ||
-	   bytes.Contains(data, []byte("iTXt")) ||
-	   bytes.Contains(data, []byte("eXIf")) {
+		bytes.Contains(data, []byte("iTXt")) ||
+		bytes.Contains(data, []byte("eXIf")) {
 		return true
 	}
 

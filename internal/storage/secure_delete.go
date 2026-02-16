@@ -20,7 +20,7 @@ func SecureDelete(path string) error {
 		return os.Remove(path)
 	}
 
-	f, err := os.OpenFile(path, os.O_WRONLY, 0)
+	f, err := os.OpenFile(path, os.O_WRONLY, 0) // #nosec G304 -- path from validated drop directory
 	if err != nil {
 		return fmt.Errorf("failed to open file for overwrite: %w", err)
 	}
@@ -32,7 +32,7 @@ func SecureDelete(path string) error {
 		buf[i] = 0x00
 	}
 	if err := overwriteFile(f, size, buf); err != nil {
-		f.Close()
+		_ = f.Close()
 		return fmt.Errorf("zero pass failed: %w", err)
 	}
 
@@ -41,18 +41,18 @@ func SecureDelete(path string) error {
 		buf[i] = 0xFF
 	}
 	if err := overwriteFile(f, size, buf); err != nil {
-		f.Close()
+		_ = f.Close()
 		return fmt.Errorf("ones pass failed: %w", err)
 	}
 
 	// Pass 3: random
 	if err := overwriteFileRandom(f, size); err != nil {
-		f.Close()
+		_ = f.Close()
 		return fmt.Errorf("random pass failed: %w", err)
 	}
 
-	f.Sync()
-	f.Close()
+	_ = f.Sync()
+	_ = f.Close()
 
 	return os.Remove(path)
 }

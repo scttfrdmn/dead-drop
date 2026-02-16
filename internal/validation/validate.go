@@ -10,9 +10,9 @@ import (
 
 // Validator handles file validation
 type Validator struct {
-	AllowedTypes   []string
-	MaxSizeBytes   int64
-	BlockedTypes   []string
+	AllowedTypes []string
+	MaxSizeBytes int64
+	BlockedTypes []string
 }
 
 // NewValidator creates a new file validator
@@ -88,17 +88,17 @@ func (v *Validator) validateSpecificType(filename string, data []byte) error {
 		}
 		// Mach-O magic numbers
 		if bytes.Equal(data[0:4], []byte{0xFE, 0xED, 0xFA, 0xCE}) ||
-		   bytes.Equal(data[0:4], []byte{0xFE, 0xED, 0xFA, 0xCF}) ||
-		   bytes.Equal(data[0:4], []byte{0xCE, 0xFA, 0xED, 0xFE}) ||
-		   bytes.Equal(data[0:4], []byte{0xCF, 0xFA, 0xED, 0xFE}) {
+			bytes.Equal(data[0:4], []byte{0xFE, 0xED, 0xFA, 0xCF}) ||
+			bytes.Equal(data[0:4], []byte{0xCE, 0xFA, 0xED, 0xFE}) ||
+			bytes.Equal(data[0:4], []byte{0xCF, 0xFA, 0xED, 0xFE}) {
 			return fmt.Errorf("executable files not allowed")
 		}
 	}
 
 	// Check for shell script shebangs
 	if bytes.HasPrefix(data, []byte("#!/bin/sh")) ||
-	   bytes.HasPrefix(data, []byte("#!/bin/bash")) ||
-	   bytes.HasPrefix(data, []byte("#!/usr/bin/env")) {
+		bytes.HasPrefix(data, []byte("#!/bin/bash")) ||
+		bytes.HasPrefix(data, []byte("#!/usr/bin/env")) {
 		return fmt.Errorf("shell scripts not allowed")
 	}
 

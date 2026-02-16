@@ -1,5 +1,9 @@
 # Dead Drop
 
+[![CI](https://github.com/scttfrdmn/dead-drop/actions/workflows/ci.yml/badge.svg)](https://github.com/scttfrdmn/dead-drop/actions/workflows/ci.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/scttfrdmn/dead-drop)](https://goreportcard.com/report/github.com/scttfrdmn/dead-drop)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+
 Secure and anonymous file submission system with no tracking of submitters.
 
 ## Features

@@ -71,7 +71,7 @@ func LoadConfig(path string) (*Config, error) {
 	cfg := DefaultConfig()
 
 	// Read file
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) // #nosec G304 -- config path from command-line flag
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file: %w", err)
 	}
@@ -96,7 +96,7 @@ func SaveConfig(path string, cfg *Config) error {
 		return fmt.Errorf("failed to marshal config: %w", err)
 	}
 
-	if err := os.WriteFile(path, data, 0644); err != nil {
+	if err := os.WriteFile(path, data, 0600); err != nil {
 		return fmt.Errorf("failed to write config: %w", err)
 	}
 

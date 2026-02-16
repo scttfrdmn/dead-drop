@@ -10,11 +10,11 @@ import (
 
 // QuotaManager tracks total storage usage and drop count.
 type QuotaManager struct {
-	mu          sync.Mutex
-	totalBytes  int64
-	dropCount   int
-	maxBytes    int64
-	maxDrops    int
+	mu         sync.Mutex
+	totalBytes int64
+	dropCount  int
+	maxBytes   int64
+	maxDrops   int
 }
 
 // NewQuotaManager creates a quota manager and scans existing drops.

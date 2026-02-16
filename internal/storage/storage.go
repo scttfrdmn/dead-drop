@@ -73,7 +73,7 @@ func (m *Manager) Close() {
 // loadOrGenerateKey loads existing key or generates new one
 func loadOrGenerateKey(keyPath string) ([]byte, error) {
 	// Try to load existing key
-	if data, err := os.ReadFile(keyPath); err == nil {
+	if data, err := os.ReadFile(keyPath); err == nil { // #nosec G304 -- keyPath is internal, not user-controlled
 		if len(data) == 32 {
 			return data, nil
 		}
@@ -130,7 +130,7 @@ func (m *Manager) SaveDrop(filename string, reader io.Reader) (*Drop, error) {
 	// Check quota if configured
 	if m.Quota != nil {
 		if err := m.Quota.Reserve(size); err != nil {
-			os.Remove(dropDir)
+			_ = os.Remove(dropDir)
 			return nil, fmt.Errorf("quota exceeded: %w", err)
 		}
 	}
@@ -140,7 +140,7 @@ func (m *Manager) SaveDrop(filename string, reader io.Reader) (*Drop, error) {
 
 	// Encrypt and save file with AAD
 	filePath := filepath.Join(dropDir, "file.enc")
-	f, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY, 0600)
+	f, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY, 0600) // #nosec G304 -- path built from validated drop ID
 	if err != nil {
 		return nil, fmt.Errorf("failed to create file: %w", err)
 	}
@@ -196,7 +196,7 @@ func (m *Manager) GetDrop(id string) (string, io.ReadCloser, error) {
 
 	// Open encrypted file
 	filePath := filepath.Join(dropDir, "file.enc")
-	f, err := os.Open(filePath)
+	f, err := os.Open(filePath) // #nosec G304 -- path built from validated drop ID
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to open file: %w", err)
 	}

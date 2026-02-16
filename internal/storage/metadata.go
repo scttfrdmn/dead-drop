@@ -21,7 +21,7 @@ const metadataVersion = 1
 type EncryptedMetadata struct {
 	Version       int    `json:"version"`
 	EncryptedData string `json:"encrypted_data"` // hex-encoded
-	Nonce         string `json:"nonce"`           // hex-encoded
+	Nonce         string `json:"nonce"`          // hex-encoded
 }
 
 // MetadataPayload is the decrypted metadata content.
@@ -96,7 +96,7 @@ func saveEncryptedMetadata(path string, storageKey []byte, dropID string, payloa
 // loadEncryptedMetadata reads and decrypts metadata from disk.
 // It supports backward compatibility with old plaintext format.
 func loadEncryptedMetadata(path string, storageKey []byte, dropID string) (*MetadataPayload, error) {
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) // #nosec G304 -- path built from validated drop ID
 	if err != nil {
 		return nil, fmt.Errorf("failed to read metadata: %w", err)
 	}
@@ -163,7 +163,7 @@ func parseLegacyMetadata(data string) (*MetadataPayload, error) {
 			payload.Receipt = strings.TrimPrefix(line, "receipt=")
 		} else if strings.HasPrefix(line, "timestamp=") {
 			var ts int64
-			fmt.Sscanf(line, "timestamp=%d", &ts)
+			_, _ = fmt.Sscanf(line, "timestamp=%d", &ts)
 			payload.TimestampHour = ts
 		}
 	}
