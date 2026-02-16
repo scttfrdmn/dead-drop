@@ -27,9 +27,9 @@ func (s *Scrubber) ScrubFile(filename string, reader io.Reader, writer io.Writer
 	lower := strings.ToLower(filename)
 
 	if strings.HasSuffix(lower, ".jpg") || strings.HasSuffix(lower, ".jpeg") {
-		cleaned = s.stripJPEGExif(data)
+		cleaned = recoverScrub(data, s.stripJPEGExif)
 	} else if strings.HasSuffix(lower, ".png") {
-		cleaned = s.stripPNGMetadata(data)
+		cleaned = recoverScrub(data, s.stripPNGMetadata)
 	}
 	// Add more file types as needed
 
@@ -38,6 +38,16 @@ func (s *Scrubber) ScrubFile(filename string, reader io.Reader, writer io.Writer
 	}
 
 	return nil
+}
+
+// recoverScrub calls fn and recovers from any panic, returning the original data on failure.
+func recoverScrub(data []byte, fn func([]byte) []byte) (result []byte) {
+	defer func() {
+		if r := recover(); r != nil {
+			result = data
+		}
+	}()
+	return fn(data)
 }
 
 // stripJPEGExif removes EXIF data from JPEG files
@@ -77,6 +87,9 @@ func (s *Scrubber) stripJPEGExif(data []byte) []byte {
 				break
 			}
 			segmentLen := int(data[i+2])<<8 | int(data[i+3])
+			if segmentLen < 2 || i+2+segmentLen > len(data) {
+				break
+			}
 			// Skip this segment (marker + length + data)
 			i += 2 + segmentLen
 			continue
@@ -134,6 +147,10 @@ func (s *Scrubber) stripPNGMetadata(data []byte) []byte {
 		chunkLen := int(data[i])<<24 | int(data[i+1])<<16 | int(data[i+2])<<8 | int(data[i+3])
 		chunkType := string(data[i+4 : i+8])
 
+		// Guard against negative length (high bit set) and overflow
+		if chunkLen < 0 || chunkLen > len(data)-12 {
+			break
+		}
 		totalChunkSize := 12 + chunkLen // length(4) + type(4) + data(n) + crc(4)
 		if i+totalChunkSize > len(data) {
 			break

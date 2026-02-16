@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- Hardened JPEG/PNG metadata scrubber against malformed files with bounds checking and panic recovery (closes #11)
+- Added fuzz tests for metadata scrubber parsers
+
 ## [0.6.0] - 2026-02-15
 
 ### Added
