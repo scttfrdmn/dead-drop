@@ -427,10 +427,10 @@ func TestSecurityHeaders_AllPresent(t *testing.T) {
 
 	headers := map[string]string{
 		"X-Content-Type-Options": "nosniff",
-		"X-Frame-Options":       "DENY",
-		"Referrer-Policy":       "no-referrer",
-		"X-XSS-Protection":     "1; mode=block",
-		"Cache-Control":         "no-store",
+		"X-Frame-Options":        "DENY",
+		"Referrer-Policy":        "no-referrer",
+		"X-XSS-Protection":       "1; mode=block",
+		"Cache-Control":          "no-store",
 	}
 
 	for name, want := range headers {

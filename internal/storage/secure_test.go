@@ -27,7 +27,7 @@ func TestValidateDropID_PathTraversal(t *testing.T) {
 
 func TestValidateDropID_WrongLength(t *testing.T) {
 	ids := []string{
-		"abcdef",                                    // too short
+		"abcdef", // too short
 		"abcdef0123456789abcdef0123456789abcdef01", // too long
 		"",
 	}
@@ -41,8 +41,8 @@ func TestValidateDropID_WrongLength(t *testing.T) {
 func TestValidateDropID_NonHexChars(t *testing.T) {
 	ids := []string{
 		"ABCDEF0123456789ABCDEF0123456789", // uppercase
-		"abcdef012345678gabcdef0123456789",  // 'g'
-		"abcdef0123456789abcdef012345678!",  // special char
+		"abcdef012345678gabcdef0123456789", // 'g'
+		"abcdef0123456789abcdef012345678!", // special char
 	}
 	for _, id := range ids {
 		if err := ValidateDropID(id); err == nil {
