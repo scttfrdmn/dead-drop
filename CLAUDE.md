@@ -8,6 +8,14 @@
 - Group related issues under GitHub Milestones for release planning
 - Use GitHub Projects boards for workflow visibility
 
+## Versioning & Releases
+
+- Follow [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html) (semver2)
+- Maintain `CHANGELOG.md` using [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format
+- Update CHANGELOG.md with every user-facing change
+- Tag releases as `v<major>.<minor>.<patch>` (e.g., `v0.2.0`)
+- License: Apache 2.0, Copyright 2026 Scott Friedman
+
 ## Build & Test
 
 - `make build` — build server and CLI
