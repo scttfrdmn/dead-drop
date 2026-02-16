@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed TOCTOU race condition in cleanup where expired drops could be deleted during active retrieval (closes #20)
 - Removed legacy plaintext metadata support; only encrypted JSON envelope format is accepted (closes #21)
 - Docker Compose now binds port to localhost only, preventing exposure on public interfaces (closes #22)
+- Sanitize uploaded filename at point of entry before storing in metadata (closes #23)
 
 ## [0.9.0] - 2026-02-15
 

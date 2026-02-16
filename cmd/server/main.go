@@ -370,8 +370,12 @@ func (s *Server) handleSubmit(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
+	// SECURITY: Sanitize filename at point of entry to prevent path traversal
+	// or injection in metadata storage and any downstream consumers
+	filename := filepath.Base(header.Filename)
+
 	// Validate file
-	fileData, err := s.validator.ValidateFile(header.Filename, file)
+	fileData, err := s.validator.ValidateFile(filename, file)
 	if err != nil {
 		if s.config.Logging.Errors {
 			log.Printf("Validation failed: %v", err)
@@ -386,7 +390,7 @@ func (s *Server) handleSubmit(w http.ResponseWriter, r *http.Request) {
 	// Optionally scrub metadata (deprecated: prefer client-side)
 	if s.config.Security.ScrubMetadata {
 		scrubbed := &bytes.Buffer{}
-		if err := s.scrubber.ScrubFile(header.Filename, reader, scrubbed); err != nil {
+		if err := s.scrubber.ScrubFile(filename, reader, scrubbed); err != nil {
 			if s.config.Logging.Errors {
 				log.Printf("Metadata scrubbing failed: %v", err)
 			}
@@ -398,7 +402,7 @@ func (s *Server) handleSubmit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Save the drop
-	drop, err := s.storage.SaveDrop(header.Filename, reader)
+	drop, err := s.storage.SaveDrop(filename, reader)
 	if err != nil {
 		if s.config.Logging.Errors {
 			log.Printf("Error saving drop: %v", err)
