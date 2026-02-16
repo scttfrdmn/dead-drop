@@ -167,7 +167,7 @@ func (m *Manager) SaveDrop(filename string, reader io.Reader) (*Drop, error) {
 	fileHash := computeSHA256(data)
 
 	// Encrypt and save file with AAD
-	filePath := filepath.Join(dropDir, "file.enc")
+	filePath := filepath.Join(dropDir, "data")
 	f, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY, 0600) // #nosec G304 -- path built from validated drop ID
 	if err != nil {
 		return nil, fmt.Errorf("failed to create file: %w", err)
@@ -222,8 +222,11 @@ func (m *Manager) GetDrop(id string) (string, io.ReadCloser, error) {
 		return "", nil, fmt.Errorf("drop not found: %w", err)
 	}
 
-	// Open encrypted file
-	filePath := filepath.Join(dropDir, "file.enc")
+	// Open encrypted file (try "data" first, fall back to legacy "file.enc")
+	filePath := filepath.Join(dropDir, "data")
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		filePath = filepath.Join(dropDir, "file.enc")
+	}
 	f, err := os.Open(filePath) // #nosec G304 -- path built from validated drop ID
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to open file: %w", err)
@@ -262,9 +265,12 @@ func (m *Manager) DeleteDrop(id string) error {
 
 	dropDir := filepath.Join(m.StorageDir, id)
 
-	// Release quota for the encrypted file size
+	// Release quota for the encrypted file size (try "data" first, fall back to legacy "file.enc")
 	if m.Quota != nil {
-		filePath := filepath.Join(dropDir, "file.enc")
+		filePath := filepath.Join(dropDir, "data")
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			filePath = filepath.Join(dropDir, "file.enc")
+		}
 		if info, err := os.Stat(filePath); err == nil {
 			m.Quota.Release(info.Size())
 		}

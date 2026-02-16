@@ -157,8 +157,11 @@ func rewrapKeyFile(path string, oldMasterKey, newMasterKey []byte) error {
 
 // reencryptDrop decrypts a drop's file and metadata with the old key and re-encrypts with the new key.
 func reencryptDrop(dropDir, dropID string, oldKey, newKey []byte) error {
-	// Re-encrypt file.enc
-	filePath := filepath.Join(dropDir, "file.enc")
+	// Re-encrypt data file (try "data" first, fall back to legacy "file.enc")
+	filePath := filepath.Join(dropDir, "data")
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		filePath = filepath.Join(dropDir, "file.enc")
+	}
 	if err := reencryptFile(filePath, dropID, oldKey, newKey); err != nil {
 		return fmt.Errorf("failed to re-encrypt file: %w", err)
 	}

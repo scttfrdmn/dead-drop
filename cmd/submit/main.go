@@ -121,7 +121,6 @@ func submitFile(config Config) error {
 			return fmt.Errorf("encryption failed: %w", err)
 		}
 		fileData = encrypted.Bytes()
-		filename = filename + ".enc"
 		fmt.Println("File encrypted")
 	}
 

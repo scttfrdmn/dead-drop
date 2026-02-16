@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Stored encrypted files renamed from `file.enc` to `data` to eliminate filename leakage (closes #2)
+- Client-side encryption no longer appends `.enc` to filenames sent to server
+
+### Security
+- Encrypted file storage no longer reveals encryption status through filename extension
+
 ## [0.3.0] - 2026-02-15
 
 ### Added

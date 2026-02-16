@@ -35,7 +35,10 @@ func NewQuotaManager(storageDir string, maxGB float64, maxDrops int) (*QuotaMana
 			continue
 		}
 
-		filePath := filepath.Join(storageDir, entry.Name(), "file.enc")
+		filePath := filepath.Join(storageDir, entry.Name(), "data")
+		if _, statErr := os.Stat(filePath); os.IsNotExist(statErr) {
+			filePath = filepath.Join(storageDir, entry.Name(), "file.enc")
+		}
 		if info, err := os.Stat(filePath); err == nil {
 			qm.totalBytes += info.Size()
 			qm.dropCount++
