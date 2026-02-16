@@ -54,6 +54,14 @@ func createMultipartFile(t *testing.T, fieldName, filename string, content []byt
 	return &buf, writer.FormDataContentType()
 }
 
+func retrieveRequest(t *testing.T, dropID, receipt string) *http.Request {
+	t.Helper()
+	form := strings.NewReader("id=" + dropID + "&receipt=" + receipt)
+	req := httptest.NewRequest(http.MethodPost, "/retrieve", form)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	return req
+}
+
 func TestHandleIndex_ServesHTML(t *testing.T) {
 	s := newTestServer(t)
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -163,7 +171,7 @@ func TestHandleRetrieve_ValidReceipt(t *testing.T) {
 	receipt := resp["receipt"]
 
 	// Retrieve the file
-	req = httptest.NewRequest(http.MethodGet, "/retrieve?id="+dropID+"&receipt="+receipt, nil)
+	req = retrieveRequest(t, dropID, receipt)
 	rec = httptest.NewRecorder()
 	s.handleRetrieve(rec, req)
 
@@ -201,7 +209,7 @@ func TestHandleRetrieve_InvalidReceipt(t *testing.T) {
 	dropID := resp["drop_id"]
 
 	// Try to retrieve with wrong receipt
-	req = httptest.NewRequest(http.MethodGet, "/retrieve?id="+dropID+"&receipt=wrongreceipt", nil)
+	req = retrieveRequest(t, dropID, "wrongreceipt")
 	rec = httptest.NewRecorder()
 	s.handleRetrieve(rec, req)
 
@@ -213,7 +221,7 @@ func TestHandleRetrieve_InvalidReceipt(t *testing.T) {
 func TestHandleRetrieve_MissingParams(t *testing.T) {
 	s := newTestServer(t)
 
-	req := httptest.NewRequest(http.MethodGet, "/retrieve", nil)
+	req := httptest.NewRequest(http.MethodPost, "/retrieve", nil)
 	rec := httptest.NewRecorder()
 	s.handleRetrieve(rec, req)
 
@@ -224,7 +232,7 @@ func TestHandleRetrieve_MissingParams(t *testing.T) {
 
 func TestHandleRetrieve_MethodNotAllowed(t *testing.T) {
 	s := newTestServer(t)
-	req := httptest.NewRequest(http.MethodPost, "/retrieve", nil)
+	req := httptest.NewRequest(http.MethodGet, "/retrieve", nil)
 	rec := httptest.NewRecorder()
 
 	s.handleRetrieve(rec, req)
@@ -236,7 +244,7 @@ func TestHandleRetrieve_MethodNotAllowed(t *testing.T) {
 
 func TestHandleRetrieve_InvalidIDLength(t *testing.T) {
 	s := newTestServer(t)
-	req := httptest.NewRequest(http.MethodGet, "/retrieve?id=short&receipt=abc", nil)
+	req := retrieveRequest(t, "short", "abc")
 	rec := httptest.NewRecorder()
 
 	s.handleRetrieve(rec, req)
@@ -262,7 +270,7 @@ func TestHandleRetrieve_DeleteAfterRetrieve(t *testing.T) {
 	json.Unmarshal(rec.Body.Bytes(), &resp)
 
 	// First retrieve — should succeed
-	req = httptest.NewRequest(http.MethodGet, "/retrieve?id="+resp["drop_id"]+"&receipt="+resp["receipt"], nil)
+	req = retrieveRequest(t, resp["drop_id"], resp["receipt"])
 	rec = httptest.NewRecorder()
 	s.handleRetrieve(rec, req)
 
@@ -271,7 +279,7 @@ func TestHandleRetrieve_DeleteAfterRetrieve(t *testing.T) {
 	}
 
 	// Second retrieve — should fail (deleted)
-	req = httptest.NewRequest(http.MethodGet, "/retrieve?id="+resp["drop_id"]+"&receipt="+resp["receipt"], nil)
+	req = retrieveRequest(t, resp["drop_id"], resp["receipt"])
 	rec = httptest.NewRecorder()
 	s.handleRetrieve(rec, req)
 
@@ -505,7 +513,7 @@ func TestMetrics_DownloadCounter(t *testing.T) {
 	json.Unmarshal(rec.Body.Bytes(), &resp)
 
 	// Download
-	req = httptest.NewRequest(http.MethodGet, "/retrieve?id="+resp["drop_id"]+"&receipt="+resp["receipt"], nil)
+	req = retrieveRequest(t, resp["drop_id"], resp["receipt"])
 	rec = httptest.NewRecorder()
 	s.handleRetrieve(rec, req)
 
@@ -550,7 +558,7 @@ func TestHandleRetrieve_NonexistentDrop(t *testing.T) {
 	fakeID := "abcdef0123456789abcdef0123456789"
 	receipt := s.storage.Receipts.Generate(fakeID)
 
-	req := httptest.NewRequest(http.MethodGet, "/retrieve?id="+fakeID+"&receipt="+receipt, nil)
+	req := retrieveRequest(t, fakeID, receipt)
 	rec := httptest.NewRecorder()
 	s.handleRetrieve(rec, req)
 
@@ -643,7 +651,7 @@ func TestHandleRetrieve_WithDeleteLogging(t *testing.T) {
 	var resp map[string]string
 	json.Unmarshal(rec.Body.Bytes(), &resp)
 
-	req = httptest.NewRequest(http.MethodGet, "/retrieve?id="+resp["drop_id"]+"&receipt="+resp["receipt"], nil)
+	req = retrieveRequest(t, resp["drop_id"], resp["receipt"])
 	rec = httptest.NewRecorder()
 	s.handleRetrieve(rec, req)
 

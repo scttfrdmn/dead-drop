@@ -65,7 +65,13 @@ document.getElementById('retrieveForm').addEventListener('submit', async (e) => 
     }
 
     try {
-        const response = await fetch('/retrieve?id=' + encodeURIComponent(dropId) + '&receipt=' + encodeURIComponent(receiptCode));
+        const params = new URLSearchParams();
+        params.append('id', dropId);
+        params.append('receipt', receiptCode);
+        const response = await fetch('/retrieve', {
+            method: 'POST',
+            body: params
+        });
 
         if (!response.ok) {
             throw new Error('Retrieval failed - check your drop ID and receipt');

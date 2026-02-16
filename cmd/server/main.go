@@ -429,13 +429,15 @@ func (s *Server) handleSubmit(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleRetrieve(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
+	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	dropID := r.URL.Query().Get("id")
-	receipt := r.URL.Query().Get("receipt")
+	// SECURITY: Accept credentials via POST body instead of URL query string
+	// to prevent leakage through proxy logs, browser history, and Referrer headers
+	dropID := r.FormValue("id")
+	receipt := r.FormValue("receipt")
 
 	if dropID == "" || receipt == "" {
 		http.Error(w, "Missing drop ID or receipt", http.StatusBadRequest)
