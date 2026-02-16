@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-02-15
+
+### Added
+- Master key encryption for key files at rest (`.encryption.key`, `.receipt.key`) using Argon2id key derivation and AES-256-GCM wrapping
+- Automatic migration of plaintext key files to encrypted format when master key is configured
+- TLS support with configurable certificate and key file paths
+- HSTS header (`Strict-Transport-Security`) automatically added when TLS is enabled
+- `master_key_env` config option to specify environment variable containing the master key passphrase
+- `tls.cert_file` and `tls.key_file` config options for TLS certificate configuration
+- Key rotation CLI tool (`cmd/rotate-keys`) for offline key rotation and re-wrapping
+- Master key crypto primitives with salt management (`internal/crypto/masterkey.go`)
+
+### Security
+- Key files are no longer stored as plaintext when master key is configured (closes #1)
+- TLS transport encryption prevents cleartext transmission in non-Tor deployments (closes #12)
+- HSTS enforcement when TLS is active to prevent protocol downgrade attacks
+
 ## [0.2.0] - 2026-02-15
 
 ### Added
@@ -54,6 +71,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secure key input via `-key-file` flag
 - Configuration via YAML file
 
-[Unreleased]: https://github.com/scttfrdmn/dead-drop/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/scttfrdmn/dead-drop/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/scttfrdmn/dead-drop/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/scttfrdmn/dead-drop/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/scttfrdmn/dead-drop/releases/tag/v0.1.0

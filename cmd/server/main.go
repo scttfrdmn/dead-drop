@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"crypto/rand"
+	"crypto/tls"
 	"embed"
 	"encoding/json"
 	"flag"
@@ -11,10 +12,12 @@ import (
 	"log"
 	"math/big"
 	"net/http"
+	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/scttfrdmn/dead-drop/internal/config"
+	"github.com/scttfrdmn/dead-drop/internal/crypto"
 	"github.com/scttfrdmn/dead-drop/internal/metadata"
 	"github.com/scttfrdmn/dead-drop/internal/ratelimit"
 	"github.com/scttfrdmn/dead-drop/internal/storage"
@@ -25,10 +28,11 @@ import (
 var staticFiles embed.FS
 
 type Server struct {
-	storage   *storage.Manager
-	config    *config.Config
-	validator *validation.Validator
-	scrubber  *metadata.Scrubber
+	storage    *storage.Manager
+	config     *config.Config
+	validator  *validation.Validator
+	scrubber   *metadata.Scrubber
+	tlsEnabled bool
 }
 
 func main() {
@@ -49,8 +53,23 @@ func main() {
 		cfg = config.DefaultConfig()
 	}
 
+	// Derive master key from environment variable if configured
+	var masterKey []byte
+	if cfg.Security.MasterKeyEnv != "" {
+		passphrase := os.Getenv(cfg.Security.MasterKeyEnv)
+		if passphrase == "" {
+			log.Fatalf("Master key environment variable %s is set in config but empty or unset", cfg.Security.MasterKeyEnv)
+		}
+		salt, saltErr := crypto.LoadOrGenerateSalt(cfg.Server.StorageDir)
+		if saltErr != nil {
+			log.Fatalf("Failed to load/generate master salt: %v", saltErr)
+		}
+		masterKey = crypto.DeriveMasterKey(passphrase, salt)
+		defer crypto.ZeroBytes(masterKey)
+	}
+
 	// Initialize storage
-	storageManager, err := storage.NewManager(cfg.Server.StorageDir)
+	storageManager, err := storage.NewManager(cfg.Server.StorageDir, masterKey)
 	if err != nil {
 		log.Fatalf("Failed to initialize storage: %v", err)
 	}
@@ -68,11 +87,14 @@ func main() {
 		storageManager.Quota = quota
 	}
 
+	tlsEnabled := cfg.Server.TLS.CertFile != "" && cfg.Server.TLS.KeyFile != ""
+
 	server := &Server{
-		storage:   storageManager,
-		config:    cfg,
-		validator: validation.NewValidator(cfg.Server.MaxUploadMB),
-		scrubber:  metadata.NewScrubber(),
+		storage:    storageManager,
+		config:     cfg,
+		validator:  validation.NewValidator(cfg.Server.MaxUploadMB),
+		scrubber:   metadata.NewScrubber(),
+		tlsEnabled: tlsEnabled,
 	}
 
 	// Start automatic cleanup
@@ -99,9 +121,9 @@ func main() {
 	limiter := ratelimit.NewLimiter(rateLimit, 1*time.Minute)
 
 	// Routes with rate limiting and security headers
-	mux.HandleFunc("/", securityHeaders(server.handleIndex))
-	mux.HandleFunc("/submit", securityHeaders(limiter.Middleware(server.handleSubmit)))
-	mux.HandleFunc("/retrieve", securityHeaders(limiter.Middleware(server.handleRetrieve)))
+	mux.HandleFunc("/", server.securityHeaders(server.handleIndex))
+	mux.HandleFunc("/submit", server.securityHeaders(limiter.Middleware(server.handleSubmit)))
+	mux.HandleFunc("/retrieve", server.securityHeaders(limiter.Middleware(server.handleRetrieve)))
 
 	if cfg.Logging.Startup {
 		log.Printf("Dead drop server starting on %s", cfg.Server.Listen)
@@ -118,11 +140,20 @@ func main() {
 		WriteTimeout: 60 * time.Second,
 		IdleTimeout:  120 * time.Second,
 	}
-	log.Fatal(srv.ListenAndServe())
+
+	if tlsEnabled {
+		srv.TLSConfig = &tls.Config{MinVersion: tls.VersionTLS12}
+		if cfg.Logging.Startup {
+			log.Printf("TLS enabled with cert=%s key=%s", cfg.Server.TLS.CertFile, cfg.Server.TLS.KeyFile)
+		}
+		log.Fatal(srv.ListenAndServeTLS(cfg.Server.TLS.CertFile, cfg.Server.TLS.KeyFile))
+	} else {
+		log.Fatal(srv.ListenAndServe())
+	}
 }
 
 // securityHeaders wraps a handler with security response headers.
-func securityHeaders(next http.HandlerFunc) http.HandlerFunc {
+func (s *Server) securityHeaders(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("X-Frame-Options", "DENY")
@@ -132,6 +163,11 @@ func securityHeaders(next http.HandlerFunc) http.HandlerFunc {
 		w.Header().Set("Cache-Control", "no-store")
 		// Strip Server header (Go's default)
 		w.Header().Del("Server")
+
+		// HSTS when TLS is active
+		if s.tlsEnabled {
+			w.Header().Set("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
+		}
 
 		// Anti-fingerprint: random response delay (50-200ms jitter)
 		jitter, _ := rand.Int(rand.Reader, big.NewInt(150))

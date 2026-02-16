@@ -11,6 +11,11 @@ server:
   # Maximum upload size in MB
   max_upload_mb: 100
 
+  # TLS configuration (optional, empty = plain HTTP)
+  # tls:
+  #   cert_file: "/path/to/cert.pem"
+  #   key_file: "/path/to/key.pem"
+
 # Security settings
 security:
   # Delete files immediately after retrieval (true dead drop behavior)
@@ -37,6 +42,12 @@ security:
 
   # Maximum number of drops stored at once (0 = unlimited)
   max_drops: 0
+
+  # Master key encryption: name of environment variable containing the passphrase
+  # When set, .encryption.key and .receipt.key are encrypted at rest using a key
+  # derived from the passphrase via Argon2id. Empty = keys stored as plaintext.
+  # Example: master_key_env: "DEAD_DROP_MASTER_KEY"
+  # master_key_env: ""
 
 # Logging settings
 logging:

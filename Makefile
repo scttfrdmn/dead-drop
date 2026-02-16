@@ -1,11 +1,11 @@
-.PHONY: all build server submit clean test run install fmt lint build-production
+.PHONY: all build server submit rotate-keys clean test run install fmt lint build-production
 
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 BUILD_TIME ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 
 all: build
 
-build: server submit
+build: server submit rotate-keys
 
 server:
 	@echo "Building server..."
@@ -15,15 +15,20 @@ submit:
 	@echo "Building submit CLI..."
 	@go build -o dead-drop-submit ./cmd/submit
 
+rotate-keys:
+	@echo "Building rotate-keys CLI..."
+	@go build -o dead-drop-rotate-keys ./cmd/rotate-keys
+
 build-production:
 	@echo "Building production binaries (hardened)..."
 	@go build -trimpath -ldflags="-s -w -X main.version=$(VERSION) -X main.buildTime=$(BUILD_TIME)" -o dead-drop-server ./cmd/server
 	@go build -trimpath -ldflags="-s -w -X main.version=$(VERSION) -X main.buildTime=$(BUILD_TIME)" -o dead-drop-submit ./cmd/submit
+	@go build -trimpath -ldflags="-s -w -X main.version=$(VERSION) -X main.buildTime=$(BUILD_TIME)" -o dead-drop-rotate-keys ./cmd/rotate-keys
 	@echo "Production build complete."
 
 clean:
 	@echo "Cleaning..."
-	@rm -f dead-drop-server dead-drop-submit
+	@rm -f dead-drop-server dead-drop-submit dead-drop-rotate-keys
 	@rm -rf drops/
 
 test:

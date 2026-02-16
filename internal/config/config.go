@@ -17,9 +17,16 @@ type Config struct {
 
 // ServerConfig holds server settings
 type ServerConfig struct {
-	Listen      string `yaml:"listen"`
-	StorageDir  string `yaml:"storage_dir"`
-	MaxUploadMB int64  `yaml:"max_upload_mb"`
+	Listen      string    `yaml:"listen"`
+	StorageDir  string    `yaml:"storage_dir"`
+	MaxUploadMB int64     `yaml:"max_upload_mb"`
+	TLS         TLSConfig `yaml:"tls"`
+}
+
+// TLSConfig holds TLS certificate settings
+type TLSConfig struct {
+	CertFile string `yaml:"cert_file"`
+	KeyFile  string `yaml:"key_file"`
 }
 
 // SecurityConfig holds security settings
@@ -31,6 +38,7 @@ type SecurityConfig struct {
 	SecureDelete        bool    `yaml:"secure_delete"`
 	MaxStorageGB        float64 `yaml:"max_storage_gb"`
 	MaxDrops            int     `yaml:"max_drops"`
+	MasterKeyEnv        string  `yaml:"master_key_env"`
 }
 
 // LoggingConfig holds logging settings

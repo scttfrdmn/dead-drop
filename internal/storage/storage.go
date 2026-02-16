@@ -33,22 +33,23 @@ type Manager struct {
 	SecureDelete  bool
 }
 
-// NewManager creates a new storage manager
-func NewManager(storageDir string) (*Manager, error) {
+// NewManager creates a new storage manager.
+// If masterKey is non-nil, key files are encrypted at rest using the master key.
+func NewManager(storageDir string, masterKey []byte) (*Manager, error) {
 	if err := os.MkdirAll(storageDir, 0700); err != nil {
 		return nil, fmt.Errorf("failed to create storage directory: %w", err)
 	}
 
 	// Load or generate encryption key
 	keyPath := filepath.Join(storageDir, ".encryption.key")
-	key, err := loadOrGenerateKey(keyPath)
+	key, err := loadOrGenerateKey(keyPath, masterKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load encryption key: %w", err)
 	}
 
 	// Initialize receipt manager
 	receiptKeyPath := filepath.Join(storageDir, ".receipt.key")
-	receipts, err := NewReceiptManager(receiptKeyPath)
+	receipts, err := NewReceiptManager(receiptKeyPath, masterKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize receipt manager: %w", err)
 	}
@@ -70,24 +71,51 @@ func (m *Manager) Close() {
 	}
 }
 
-// loadOrGenerateKey loads existing key or generates new one
-func loadOrGenerateKey(keyPath string) ([]byte, error) {
-	// Try to load existing key
-	if data, err := os.ReadFile(keyPath); err == nil { // #nosec G304 -- keyPath is internal, not user-controlled
-		if len(data) == 32 {
+// loadOrGenerateKey loads existing key or generates new one.
+// If masterKey is non-nil, the key file is encrypted at rest.
+// Plaintext key files (32 bytes) are auto-migrated to encrypted (60 bytes) when a master key is provided.
+func loadOrGenerateKey(keyPath string, masterKey []byte) ([]byte, error) {
+	data, err := os.ReadFile(keyPath) // #nosec G304 -- keyPath is internal, not user-controlled
+	if err == nil {
+		if masterKey == nil {
+			// No master key: expect plaintext 32-byte key
+			if len(data) == 32 {
+				return data, nil
+			}
+		} else if len(data) == crypto.EncryptedKeySize {
+			// Master key provided + encrypted key file: decrypt
+			return crypto.DecryptKeyFile(masterKey, data)
+		} else if len(data) == 32 {
+			// Master key provided + plaintext key file: auto-migrate
+			encrypted, encErr := crypto.EncryptKeyFile(masterKey, data)
+			if encErr != nil {
+				return nil, fmt.Errorf("failed to encrypt key during migration: %w", encErr)
+			}
+			if writeErr := os.WriteFile(keyPath, encrypted, 0600); writeErr != nil {
+				return nil, fmt.Errorf("failed to write encrypted key: %w", writeErr)
+			}
 			return data, nil
 		}
 	}
 
 	// Generate new key
-	key, err := crypto.GenerateKey()
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate key: %w", err)
+	key, genErr := crypto.GenerateKey()
+	if genErr != nil {
+		return nil, fmt.Errorf("failed to generate key: %w", genErr)
 	}
 
-	// Save key with restricted permissions
-	if err := os.WriteFile(keyPath, key, 0600); err != nil {
-		return nil, fmt.Errorf("failed to save key: %w", err)
+	// Save key (encrypted if master key is set)
+	toWrite := key
+	if masterKey != nil {
+		encrypted, encErr := crypto.EncryptKeyFile(masterKey, key)
+		if encErr != nil {
+			return nil, fmt.Errorf("failed to encrypt new key: %w", encErr)
+		}
+		toWrite = encrypted
+	}
+
+	if writeErr := os.WriteFile(keyPath, toWrite, 0600); writeErr != nil {
+		return nil, fmt.Errorf("failed to save key: %w", writeErr)
 	}
 
 	return key, nil
