@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-02-15
+
 ### Added
 - Tor-only mode (`tor_only` config / `-tor-only` flag) rejects non-loopback connections for hidden service deployments (closes #6)
 - Tor hidden service setup documentation (`deploy/tor-hidden-service.md`)
@@ -101,7 +103,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secure key input via `-key-file` flag
 - Configuration via YAML file
 
-[Unreleased]: https://github.com/scttfrdmn/dead-drop/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/scttfrdmn/dead-drop/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/scttfrdmn/dead-drop/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/scttfrdmn/dead-drop/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/scttfrdmn/dead-drop/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/scttfrdmn/dead-drop/compare/v0.2.0...v0.3.0
