@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-02-15
+
 ### Added
 - Configurable log directory (`log_dir` config / `-log-dir` flag) for ephemeral tmpfs-based logging (closes #5)
 - Docker Compose and systemd deployment examples with ephemeral log volumes
@@ -92,7 +94,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secure key input via `-key-file` flag
 - Configuration via YAML file
 
-[Unreleased]: https://github.com/scttfrdmn/dead-drop/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/scttfrdmn/dead-drop/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/scttfrdmn/dead-drop/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/scttfrdmn/dead-drop/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/scttfrdmn/dead-drop/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/scttfrdmn/dead-drop/compare/v0.1.0...v0.2.0
