@@ -16,6 +16,12 @@
 - Tag releases as `v<major>.<minor>.<patch>` (e.g., `v0.2.0`)
 - License: Apache 2.0, Copyright 2026 Scott Friedman
 
+## Code Quality
+
+- Maintain an **A+ Go Report Card** — run `gofmt`, `go vet`, and lint checks before committing
+- All code must pass `gosec`, `govulncheck`, and `staticcheck` without issues
+- Security scanning runs in CI on every push and PR
+
 ## Build & Test
 
 - `make build` — build server and CLI
