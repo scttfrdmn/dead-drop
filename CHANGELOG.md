@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-02-15
+
 ### Added
 - `/metrics` endpoint exposing operational counters in Prometheus text exposition format (closes #7)
 - Metrics include `uploads_total`, `downloads_total`, `storage_bytes`, and `active_drops`
@@ -113,7 +115,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secure key input via `-key-file` flag
 - Configuration via YAML file
 
-[Unreleased]: https://github.com/scttfrdmn/dead-drop/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/scttfrdmn/dead-drop/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/scttfrdmn/dead-drop/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/scttfrdmn/dead-drop/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/scttfrdmn/dead-drop/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/scttfrdmn/dead-drop/compare/v0.3.0...v0.4.0
