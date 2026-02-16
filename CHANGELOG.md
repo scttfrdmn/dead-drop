@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Security documentation: threat model, architecture, deployment guide, incident response, and key management (closes #9)
 - Comprehensive test suite with 176 unit tests and 3 fuzz targets across 14 new test files (closes #8)
 - Security tests for path traversal prevention, AAD mismatch detection, executable blocking, CSRF enforcement, and HMAC receipt validation
 - Fuzz targets for `EncryptDecrypt`, `ValidateFile`, and `ValidateDropID`
