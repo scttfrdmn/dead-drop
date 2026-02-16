@@ -97,6 +97,9 @@ func main() {
 
 	// Derive master key from environment variable if configured
 	var masterKey []byte
+	if cfg.Security.MasterKeyEnv == "" {
+		log.Println("WARNING: master_key_env not set — encryption keys are stored unencrypted on disk. Set master_key_env in config for production use.")
+	}
 	if cfg.Security.MasterKeyEnv != "" {
 		passphrase := os.Getenv(cfg.Security.MasterKeyEnv)
 		if passphrase == "" {
