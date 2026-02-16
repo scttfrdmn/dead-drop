@@ -39,6 +39,7 @@ type Server struct {
 
 func main() {
 	configPath := flag.String("config", "", "Path to config file (YAML)")
+	logDir := flag.String("log-dir", "", "Directory for log output (e.g., tmpfs mount for ephemeral logs)")
 	flag.Parse()
 
 	// Load configuration
@@ -53,6 +54,25 @@ func main() {
 	} else {
 		// Use defaults if no config file
 		cfg = config.DefaultConfig()
+	}
+
+	// CLI flag overrides config file
+	if *logDir != "" {
+		cfg.Logging.LogDir = *logDir
+	}
+
+	// Set up log file if log directory is configured
+	if cfg.Logging.LogDir != "" {
+		if err := os.MkdirAll(cfg.Logging.LogDir, 0700); err != nil {
+			log.Fatalf("Failed to create log directory: %v", err)
+		}
+		logPath := filepath.Join(cfg.Logging.LogDir, "dead-drop.log")
+		logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600) // #nosec G304 -- log path from config/flag
+		if err != nil {
+			log.Fatalf("Failed to open log file: %v", err)
+		}
+		defer logFile.Close()
+		log.SetOutput(logFile)
 	}
 
 	// Derive master key from environment variable if configured

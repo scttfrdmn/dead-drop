@@ -46,9 +46,10 @@ type SecurityConfig struct {
 
 // LoggingConfig holds logging settings
 type LoggingConfig struct {
-	Startup    bool `yaml:"startup"`
-	Errors     bool `yaml:"errors"`
-	Operations bool `yaml:"operations"`
+	Startup    bool   `yaml:"startup"`
+	Errors     bool   `yaml:"errors"`
+	Operations bool   `yaml:"operations"`
+	LogDir     string `yaml:"log_dir"`
 }
 
 // DefaultConfig returns default configuration

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Configurable log directory (`log_dir` config / `-log-dir` flag) for ephemeral tmpfs-based logging (closes #5)
+- Docker Compose and systemd deployment examples with ephemeral log volumes
+
 ### Security
 - Cleanup interval now includes random jitter (+/- 10 minutes) to prevent timing analysis (closes #4)
 

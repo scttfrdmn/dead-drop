@@ -1,0 +1,31 @@
+# Dead Drop - Docker Compose with ephemeral logging
+#
+# Logs are written to a tmpfs volume that exists only in memory.
+# All logs are destroyed on container stop/restart.
+#
+# Usage:
+#   docker compose up -d
+
+services:
+  dead-drop:
+    build: ..
+    ports:
+      - "8080:8080"
+    volumes:
+      - drops:/data/drops
+      - ./config.yaml:/etc/dead-drop/config.yaml:ro
+    tmpfs:
+      - /var/log/dead-drop:size=64m,mode=0700
+    environment:
+      - DEAD_DROP_MASTER_KEY
+    command:
+      - "-config"
+      - "/etc/dead-drop/config.yaml"
+      - "-log-dir"
+      - "/var/log/dead-drop"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  drops:

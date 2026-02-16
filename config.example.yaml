@@ -64,3 +64,8 @@ logging:
 
   # Log file operations (DISABLE for anonymity in production)
   operations: false
+
+  # Directory for log output (empty = stderr)
+  # Point this to a tmpfs mount for ephemeral logs that don't survive reboots
+  # Example: /var/log/dead-drop (mount as tmpfs)
+  # log_dir: "/var/log/dead-drop"

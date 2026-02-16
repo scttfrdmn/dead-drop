@@ -1,0 +1,38 @@
+# Dead Drop - systemd unit with ephemeral logging
+#
+# Logs are written to a tmpfs-backed directory that is destroyed on reboot.
+# Install: sudo cp dead-drop.service /etc/systemd/system/
+#          sudo systemctl daemon-reload
+#          sudo systemctl enable --now dead-drop
+
+[Unit]
+Description=Dead Drop Anonymous File Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=dead-drop
+Group=dead-drop
+
+ExecStart=/usr/local/bin/dead-drop-server \
+    -config /etc/dead-drop/config.yaml \
+    -log-dir /var/log/dead-drop
+
+# Ephemeral log directory (tmpfs, destroyed on reboot)
+LogsDirectory=dead-drop
+RuntimeDirectory=dead-drop
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ReadWritePaths=/var/lib/dead-drop /var/log/dead-drop
+
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
