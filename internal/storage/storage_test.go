@@ -244,7 +244,7 @@ func TestSaveDrop_WithQuota(t *testing.T) {
 
 	// Delete should release quota
 	m.DeleteDrop(drop.ID)
-	totalBytes, dropCount = qm.Stats()
+	_, dropCount = qm.Stats()
 	if dropCount != 0 {
 		t.Errorf("dropCount after delete = %d, want 0", dropCount)
 	}
