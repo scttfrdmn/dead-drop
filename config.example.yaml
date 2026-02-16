@@ -1,0 +1,50 @@
+# Dead Drop Server Configuration
+
+# Server settings
+server:
+  # Address to listen on
+  listen: ":8080"
+
+  # Storage directory for encrypted drops
+  storage_dir: "./drops"
+
+  # Maximum upload size in MB
+  max_upload_mb: 100
+
+# Security settings
+security:
+  # Delete files immediately after retrieval (true dead drop behavior)
+  delete_after_retrieve: false
+
+  # Maximum file age in hours before automatic cleanup (0 = disabled)
+  # Default: 168 hours (7 days)
+  max_age_hours: 168
+
+  # Strip metadata from uploaded files on server-side (deprecated: prefer client-side)
+  # Note: For true anonymity, use client-side scrubbing via CLI tool
+  scrub_metadata: false
+
+  # Rate limit: maximum requests per minute per IP (prevents DoS and enumeration)
+  # Default: 10 requests per minute
+  rate_limit_per_min: 10
+
+  # Secure file deletion: overwrite files before removing (3-pass: zeros, ones, random)
+  # Default: true
+  secure_delete: true
+
+  # Maximum total storage in GB (0 = unlimited)
+  max_storage_gb: 0
+
+  # Maximum number of drops stored at once (0 = unlimited)
+  max_drops: 0
+
+# Logging settings
+logging:
+  # Enable startup/configuration logging
+  startup: true
+
+  # Log errors (recommended)
+  errors: true
+
+  # Log file operations (DISABLE for anonymity in production)
+  operations: false
