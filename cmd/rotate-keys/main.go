@@ -101,7 +101,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to encrypt new key: %v", err)
 	}
-	if err := os.WriteFile(encKeyPath, encrypted, 0600); err != nil {
+	if err := os.WriteFile(filepath.Clean(encKeyPath), encrypted, 0600); err != nil { // #nosec G703 -- path from CLI flag
 		log.Fatalf("Failed to write new encryption key: %v", err)
 	}
 
@@ -149,7 +149,7 @@ func rewrapKeyFile(path string, oldMasterKey, newMasterKey []byte) error {
 		return fmt.Errorf("failed to encrypt key: %w", err)
 	}
 
-	if err := os.WriteFile(path, encrypted, 0600); err != nil {
+	if err := os.WriteFile(filepath.Clean(path), encrypted, 0600); err != nil { // #nosec G703 -- path from CLI flag
 		return fmt.Errorf("failed to write key: %w", err)
 	}
 	return nil
