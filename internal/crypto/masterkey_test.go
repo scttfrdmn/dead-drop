@@ -58,7 +58,9 @@ func TestEncryptDecryptKeyFile_RoundTrip(t *testing.T) {
 		plaintextKey[i] = byte(i + 100)
 	}
 
-	encrypted, err := EncryptKeyFile(masterKey, plaintextKey)
+	purpose := []byte("encryption-key")
+
+	encrypted, err := EncryptKeyFile(masterKey, plaintextKey, purpose)
 	if err != nil {
 		t.Fatalf("encrypt failed: %v", err)
 	}
@@ -67,7 +69,7 @@ func TestEncryptDecryptKeyFile_RoundTrip(t *testing.T) {
 		t.Fatalf("expected encrypted size %d, got %d", EncryptedKeySize, len(encrypted))
 	}
 
-	decrypted, err := DecryptKeyFile(masterKey, encrypted)
+	decrypted, err := DecryptKeyFile(masterKey, encrypted, purpose)
 	if err != nil {
 		t.Fatalf("decrypt failed: %v", err)
 	}
@@ -83,15 +85,34 @@ func TestDecryptKeyFile_WrongMasterKey(t *testing.T) {
 	wrongKey[0] = 0xFF
 
 	plaintextKey := make([]byte, 32)
+	purpose := []byte("encryption-key")
 
-	encrypted, err := EncryptKeyFile(masterKey, plaintextKey)
+	encrypted, err := EncryptKeyFile(masterKey, plaintextKey, purpose)
 	if err != nil {
 		t.Fatalf("encrypt failed: %v", err)
 	}
 
-	_, err = DecryptKeyFile(wrongKey, encrypted)
+	_, err = DecryptKeyFile(wrongKey, encrypted, purpose)
 	if err == nil {
 		t.Fatal("expected error decrypting with wrong key")
+	}
+}
+
+func TestDecryptKeyFile_WrongPurpose(t *testing.T) {
+	masterKey := make([]byte, 32)
+	for i := range masterKey {
+		masterKey[i] = byte(i)
+	}
+	plaintextKey := make([]byte, 32)
+
+	encrypted, err := EncryptKeyFile(masterKey, plaintextKey, []byte("encryption-key"))
+	if err != nil {
+		t.Fatalf("encrypt failed: %v", err)
+	}
+
+	_, err = DecryptKeyFile(masterKey, encrypted, []byte("receipt-key"))
+	if err == nil {
+		t.Fatal("expected error decrypting with wrong purpose")
 	}
 }
 
@@ -123,7 +144,7 @@ func TestDeriveMasterKey_DifferentPassphrase(t *testing.T) {
 
 func TestDecryptKeyFile_TooShort(t *testing.T) {
 	masterKey := make([]byte, 32)
-	_, err := DecryptKeyFile(masterKey, []byte("short"))
+	_, err := DecryptKeyFile(masterKey, []byte("short"), []byte("test"))
 	if err == nil {
 		t.Fatal("expected error for short input")
 	}

@@ -76,7 +76,7 @@ func saveEncryptedMetadata(path string, storageKey []byte, dropID string, payloa
 		return fmt.Errorf("failed to generate nonce: %w", err)
 	}
 
-	ciphertext := gcm.Seal(nil, nonce, plaintext, nil)
+	ciphertext := gcm.Seal(nil, nonce, plaintext, []byte(dropID))
 
 	envelope := EncryptedMetadata{
 		Version:       metadataVersion,
@@ -140,7 +140,7 @@ func decryptMetadataEnvelope(envelope *EncryptedMetadata, storageKey []byte, dro
 		return nil, fmt.Errorf("failed to create GCM: %w", err)
 	}
 
-	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
+	plaintext, err := gcm.Open(nil, nonce, ciphertext, []byte(dropID))
 	if err != nil {
 		return nil, fmt.Errorf("failed to decrypt metadata: %w", err)
 	}

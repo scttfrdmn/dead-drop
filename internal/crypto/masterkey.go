@@ -50,8 +50,10 @@ func DeriveMasterKey(passphrase string, salt []byte) []byte {
 }
 
 // EncryptKeyFile encrypts a plaintext key using AES-256-GCM with the master key.
+// The purpose parameter is used as Additional Authenticated Data (AAD) to bind
+// the ciphertext to its intended use (e.g., "encryption-key" or "receipt-key").
 // Output format: nonce(12) || ciphertext+tag(32+16) = 60 bytes.
-func EncryptKeyFile(masterKey, plaintextKey []byte) ([]byte, error) {
+func EncryptKeyFile(masterKey, plaintextKey, purpose []byte) ([]byte, error) {
 	block, err := aes.NewCipher(masterKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create cipher: %w", err)
@@ -67,12 +69,13 @@ func EncryptKeyFile(masterKey, plaintextKey []byte) ([]byte, error) {
 		return nil, fmt.Errorf("failed to generate nonce: %w", err)
 	}
 
-	ciphertext := gcm.Seal(nonce, nonce, plaintextKey, nil)
+	ciphertext := gcm.Seal(nonce, nonce, plaintextKey, purpose)
 	return ciphertext, nil
 }
 
 // DecryptKeyFile decrypts an encrypted key file using AES-256-GCM with the master key.
-func DecryptKeyFile(masterKey, encryptedData []byte) ([]byte, error) {
+// The purpose parameter must match the AAD used during encryption.
+func DecryptKeyFile(masterKey, encryptedData, purpose []byte) ([]byte, error) {
 	block, err := aes.NewCipher(masterKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create cipher: %w", err)
@@ -91,7 +94,7 @@ func DecryptKeyFile(masterKey, encryptedData []byte) ([]byte, error) {
 	nonce := encryptedData[:nonceSize]
 	ciphertext := encryptedData[nonceSize:]
 
-	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
+	plaintext, err := gcm.Open(nil, nonce, ciphertext, purpose)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decrypt key: %w", err)
 	}

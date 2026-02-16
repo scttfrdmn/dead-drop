@@ -45,10 +45,10 @@ func main() {
 
 	if *rewrapOnly {
 		// Re-wrap key files with new master key
-		if err := rewrapKeyFile(encKeyPath, oldMasterKey, newMasterKey); err != nil {
+		if err := rewrapKeyFile(encKeyPath, oldMasterKey, newMasterKey, []byte("encryption-key")); err != nil {
 			log.Fatalf("Failed to rewrap encryption key: %v", err)
 		}
-		if err := rewrapKeyFile(receiptKeyPath, oldMasterKey, newMasterKey); err != nil {
+		if err := rewrapKeyFile(receiptKeyPath, oldMasterKey, newMasterKey, []byte("receipt-key")); err != nil {
 			log.Fatalf("Failed to rewrap receipt key: %v", err)
 		}
 		fmt.Println("Key files re-wrapped successfully.")
@@ -59,7 +59,7 @@ func main() {
 	fmt.Println("Full key rotation: generating new encryption key and re-encrypting all drops...")
 
 	// Load old encryption key
-	oldEncKey, err := loadKey(encKeyPath, oldMasterKey)
+	oldEncKey, err := loadKey(encKeyPath, oldMasterKey, []byte("encryption-key"))
 	if err != nil {
 		log.Fatalf("Failed to load old encryption key: %v", err)
 	}
@@ -97,7 +97,7 @@ func main() {
 	}
 
 	// Save new encryption key (encrypted with new master key)
-	encrypted, err := crypto.EncryptKeyFile(newMasterKey, newEncKey)
+	encrypted, err := crypto.EncryptKeyFile(newMasterKey, newEncKey, []byte("encryption-key"))
 	if err != nil {
 		log.Fatalf("Failed to encrypt new key: %v", err)
 	}
@@ -106,7 +106,7 @@ func main() {
 	}
 
 	// Re-wrap receipt key with new master key
-	if err := rewrapKeyFile(receiptKeyPath, oldMasterKey, newMasterKey); err != nil {
+	if err := rewrapKeyFile(receiptKeyPath, oldMasterKey, newMasterKey, []byte("receipt-key")); err != nil {
 		log.Fatalf("Failed to rewrap receipt key: %v", err)
 	}
 
@@ -114,7 +114,8 @@ func main() {
 }
 
 // loadKey reads a key file, decrypting it if masterKey is provided.
-func loadKey(path string, masterKey []byte) ([]byte, error) {
+// The purpose parameter is used as AAD for decryption.
+func loadKey(path string, masterKey, purpose []byte) ([]byte, error) {
 	data, err := os.ReadFile(path) // #nosec G304 -- path from CLI flag
 	if err != nil {
 		return nil, fmt.Errorf("failed to read key file: %w", err)
@@ -128,7 +129,7 @@ func loadKey(path string, masterKey []byte) ([]byte, error) {
 	}
 
 	if len(data) == crypto.EncryptedKeySize {
-		return crypto.DecryptKeyFile(masterKey, data)
+		return crypto.DecryptKeyFile(masterKey, data, purpose)
 	}
 	if len(data) == 32 {
 		return data, nil // plaintext, not yet migrated
@@ -137,14 +138,15 @@ func loadKey(path string, masterKey []byte) ([]byte, error) {
 }
 
 // rewrapKeyFile decrypts a key file with the old master key and re-encrypts with the new one.
-func rewrapKeyFile(path string, oldMasterKey, newMasterKey []byte) error {
-	plaintext, err := loadKey(path, oldMasterKey)
+// The purpose parameter is used as AAD for both decryption and encryption.
+func rewrapKeyFile(path string, oldMasterKey, newMasterKey, purpose []byte) error {
+	plaintext, err := loadKey(path, oldMasterKey, purpose)
 	if err != nil {
 		return fmt.Errorf("failed to load key: %w", err)
 	}
 	defer crypto.ZeroBytes(plaintext)
 
-	encrypted, err := crypto.EncryptKeyFile(newMasterKey, plaintext)
+	encrypted, err := crypto.EncryptKeyFile(newMasterKey, plaintext, purpose)
 	if err != nil {
 		return fmt.Errorf("failed to encrypt key: %w", err)
 	}

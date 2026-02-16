@@ -43,7 +43,7 @@ func NewManager(storageDir string, masterKey []byte) (*Manager, error) {
 
 	// Load or generate encryption key
 	keyPath := filepath.Join(storageDir, ".encryption.key")
-	key, err := loadOrGenerateKey(keyPath, masterKey)
+	key, err := loadOrGenerateKey(keyPath, masterKey, []byte("encryption-key"))
 	if err != nil {
 		return nil, fmt.Errorf("failed to load encryption key: %w", err)
 	}
@@ -74,8 +74,9 @@ func (m *Manager) Close() {
 
 // loadOrGenerateKey loads existing key or generates new one.
 // If masterKey is non-nil, the key file is encrypted at rest.
+// The purpose parameter is used as AAD to bind ciphertext to its intended use.
 // Plaintext key files (32 bytes) are auto-migrated to encrypted (60 bytes) when a master key is provided.
-func loadOrGenerateKey(keyPath string, masterKey []byte) ([]byte, error) {
+func loadOrGenerateKey(keyPath string, masterKey, purpose []byte) ([]byte, error) {
 	data, err := os.ReadFile(keyPath) // #nosec G304 -- keyPath is internal, not user-controlled
 	if err == nil {
 		if masterKey == nil {
@@ -85,10 +86,10 @@ func loadOrGenerateKey(keyPath string, masterKey []byte) ([]byte, error) {
 			}
 		} else if len(data) == crypto.EncryptedKeySize {
 			// Master key provided + encrypted key file: decrypt
-			return crypto.DecryptKeyFile(masterKey, data)
+			return crypto.DecryptKeyFile(masterKey, data, purpose)
 		} else if len(data) == 32 {
 			// Master key provided + plaintext key file: auto-migrate
-			encrypted, encErr := crypto.EncryptKeyFile(masterKey, data)
+			encrypted, encErr := crypto.EncryptKeyFile(masterKey, data, purpose)
 			if encErr != nil {
 				return nil, fmt.Errorf("failed to encrypt key during migration: %w", encErr)
 			}
@@ -108,7 +109,7 @@ func loadOrGenerateKey(keyPath string, masterKey []byte) ([]byte, error) {
 	// Save key (encrypted if master key is set)
 	toWrite := key
 	if masterKey != nil {
-		encrypted, encErr := crypto.EncryptKeyFile(masterKey, key)
+		encrypted, encErr := crypto.EncryptKeyFile(masterKey, key, purpose)
 		if encErr != nil {
 			return nil, fmt.Errorf("failed to encrypt new key: %w", encErr)
 		}

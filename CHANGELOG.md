@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sanitize uploaded filename at point of entry before storing in metadata (closes #23)
 - Retrieve endpoint changed from GET to POST to prevent credential leakage via URL query strings in proxy logs and browser history (closes #24)
 - Log warning at startup when master key encryption is not configured (closes #26)
+- Added AAD context binding to key file encryption (prevents swap of encryption/receipt keys) and metadata encryption (binds to drop ID) (closes #27)
 
 ## [0.9.0] - 2026-02-15
 

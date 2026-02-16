@@ -442,7 +442,7 @@ func TestLoadOrGenerateKey_PlaintextKeyNoMasterKey(t *testing.T) {
 	os.WriteFile(keyPath, origKey, 0600)
 
 	// Load without master key
-	loaded, err := loadOrGenerateKey(keyPath, nil)
+	loaded, err := loadOrGenerateKey(keyPath, nil, []byte("test-key"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -467,7 +467,7 @@ func TestLoadOrGenerateKey_AutoMigrate(t *testing.T) {
 	for i := range masterKey {
 		masterKey[i] = byte(i + 100)
 	}
-	loaded, err := loadOrGenerateKey(keyPath, masterKey)
+	loaded, err := loadOrGenerateKey(keyPath, masterKey, []byte("test-key"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -482,7 +482,7 @@ func TestLoadOrGenerateKey_AutoMigrate(t *testing.T) {
 	}
 
 	// Reload with master key should work
-	reloaded, err := loadOrGenerateKey(keyPath, masterKey)
+	reloaded, err := loadOrGenerateKey(keyPath, masterKey, []byte("test-key"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -495,7 +495,7 @@ func TestLoadOrGenerateKey_GenerateNew(t *testing.T) {
 	dir := t.TempDir()
 	keyPath := filepath.Join(dir, "new.key")
 
-	key, err := loadOrGenerateKey(keyPath, nil)
+	key, err := loadOrGenerateKey(keyPath, nil, []byte("test-key"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -519,7 +519,7 @@ func TestLoadOrGenerateKey_GenerateNewWithMasterKey(t *testing.T) {
 		masterKey[i] = byte(i)
 	}
 
-	key, err := loadOrGenerateKey(keyPath, masterKey)
+	key, err := loadOrGenerateKey(keyPath, masterKey, []byte("test-key"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -542,7 +542,7 @@ func TestLoadOrGenerateKey_InvalidSizeKey(t *testing.T) {
 	os.WriteFile(keyPath, []byte("wrong-size"), 0600)
 
 	// Without master key — should generate a new key (existing key is invalid size)
-	key, err := loadOrGenerateKey(keyPath, nil)
+	key, err := loadOrGenerateKey(keyPath, nil, []byte("test-key"))
 	if err != nil {
 		t.Fatal(err)
 	}

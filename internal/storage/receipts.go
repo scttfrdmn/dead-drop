@@ -15,7 +15,7 @@ type ReceiptManager struct {
 // NewReceiptManager loads or generates the receipt secret key.
 // If masterKey is non-nil, the key file is encrypted at rest.
 func NewReceiptManager(keyPath string, masterKey []byte) (*ReceiptManager, error) {
-	secret, err := loadOrGenerateKey(keyPath, masterKey)
+	secret, err := loadOrGenerateKey(keyPath, masterKey, []byte("receipt-key"))
 	if err != nil {
 		return nil, fmt.Errorf("failed to load receipt key: %w", err)
 	}
