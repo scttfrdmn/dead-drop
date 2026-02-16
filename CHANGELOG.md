@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Graceful shutdown on SIGINT/SIGTERM with 30-second timeout for in-flight requests (closes #25)
 - OpenSSF Scorecard CI workflow with SARIF upload to GitHub Security tab
 - CodeQL analysis CI workflow for Go with SARIF upload to GitHub Security tab
 - Dependency Review CI workflow for pull requests (fails on moderate+ severity)

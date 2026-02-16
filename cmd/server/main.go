@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"crypto/tls"
 	"embed"
@@ -14,8 +15,10 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/scttfrdmn/dead-drop/internal/config"
@@ -222,15 +225,37 @@ func main() {
 		IdleTimeout:  120 * time.Second,
 	}
 
-	if tlsEnabled {
-		srv.TLSConfig = &tls.Config{MinVersion: tls.VersionTLS12}
-		if cfg.Logging.Startup {
-			log.Printf("TLS enabled with cert=%s key=%s", cfg.Server.TLS.CertFile, cfg.Server.TLS.KeyFile)
+	// Graceful shutdown: wait for in-flight requests on SIGINT/SIGTERM
+	shutdownCh := make(chan os.Signal, 1)
+	signal.Notify(shutdownCh, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		var err error
+		if tlsEnabled {
+			srv.TLSConfig = &tls.Config{MinVersion: tls.VersionTLS12}
+			if cfg.Logging.Startup {
+				log.Printf("TLS enabled with cert=%s key=%s", cfg.Server.TLS.CertFile, cfg.Server.TLS.KeyFile)
+			}
+			err = srv.ListenAndServeTLS(cfg.Server.TLS.CertFile, cfg.Server.TLS.KeyFile)
+		} else {
+			err = srv.ListenAndServe()
 		}
-		log.Fatal(srv.ListenAndServeTLS(cfg.Server.TLS.CertFile, cfg.Server.TLS.KeyFile))
-	} else {
-		log.Fatal(srv.ListenAndServe())
+		if err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Server error: %v", err)
+		}
+	}()
+
+	<-shutdownCh
+	log.Println("Shutting down, waiting for in-flight requests...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Printf("Shutdown error: %v", err)
 	}
+
+	log.Println("Server stopped")
 }
 
 // torOnlyMiddleware rejects connections not originating from a loopback address.
