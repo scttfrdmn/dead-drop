@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/scttfrdmn/dead-drop/internal/config"
@@ -184,6 +185,7 @@ func main() {
 
 	// Routes with rate limiting and security headers
 	mux.HandleFunc("/", wrap(server.securityHeaders(server.handleIndex)))
+	mux.HandleFunc("/static/", wrap(server.securityHeaders(server.handleStatic())))
 	mux.HandleFunc("/submit", wrap(server.securityHeaders(limiter.Middleware(server.handleSubmit))))
 	mux.HandleFunc("/retrieve", wrap(server.securityHeaders(limiter.Middleware(server.handleRetrieve))))
 
@@ -270,7 +272,7 @@ func (s *Server) securityHeaders(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("X-Frame-Options", "DENY")
-		w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'")
+		w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'")
 		w.Header().Set("Referrer-Policy", "no-referrer")
 		w.Header().Set("X-XSS-Protection", "1; mode=block")
 		w.Header().Set("Cache-Control", "no-store")
@@ -316,6 +318,34 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/html")
 	_, _ = w.Write(data)
+}
+
+func (s *Server) handleStatic() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Only allow specific static files
+		name := strings.TrimPrefix(r.URL.Path, "/static/")
+		if name == "" || strings.Contains(name, "/") || strings.Contains(name, "..") {
+			http.NotFound(w, r)
+			return
+		}
+
+		data, err := staticFiles.ReadFile("static/" + name)
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+
+		switch {
+		case strings.HasSuffix(name, ".css"):
+			w.Header().Set("Content-Type", "text/css; charset=utf-8")
+		case strings.HasSuffix(name, ".js"):
+			w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
+		default:
+			w.Header().Set("Content-Type", "application/octet-stream")
+		}
+
+		_, _ = w.Write(data)
+	}
 }
 
 func (s *Server) handleSubmit(w http.ResponseWriter, r *http.Request) {

@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dependency Review CI workflow for pull requests (fails on moderate+ severity)
 - Semgrep SAST CI workflow with auto rules and SARIF upload to GitHub Security tab
 
+### Security
+- Tightened Content-Security-Policy from `unsafe-inline` to `self` by extracting inline JS and CSS into external files (closes #19)
+
 ## [0.9.0] - 2026-02-15
 
 ### Added

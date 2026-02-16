@@ -4,99 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dead Drop - Anonymous File Submission</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Courier New', monospace;
-            background: #0a0a0a;
-            color: #00ff00;
-            padding: 20px;
-            line-height: 1.6;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 40px 20px;
-        }
-        h1 {
-            font-size: 2em;
-            margin-bottom: 20px;
-            text-align: center;
-            color: #00ff00;
-            text-shadow: 0 0 10px #00ff00;
-        }
-        .warning {
-            background: #1a1a1a;
-            border: 1px solid #00ff00;
-            padding: 15px;
-            margin: 20px 0;
-            font-size: 0.9em;
-        }
-        .section {
-            background: #1a1a1a;
-            border: 1px solid #00ff00;
-            padding: 30px;
-            margin: 30px 0;
-        }
-        .file-input, .text-input {
-            display: block;
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            background: #0a0a0a;
-            border: 1px solid #00ff00;
-            color: #00ff00;
-            font-family: inherit;
-        }
-        button {
-            background: #00ff00;
-            color: #0a0a0a;
-            border: none;
-            padding: 12px 30px;
-            font-size: 1em;
-            font-family: inherit;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        button:hover {
-            background: #00cc00;
-        }
-        .receipt {
-            background: #1a1a1a;
-            border: 1px solid #00ff00;
-            padding: 20px;
-            margin: 20px 0;
-            display: none;
-        }
-        .receipt-code {
-            font-size: 0.95em;
-            color: #00ff00;
-            word-break: break-all;
-            padding: 10px;
-            background: #0a0a0a;
-            border: 1px dashed #00ff00;
-            margin: 10px 0;
-        }
-        .spinner {
-            display: none;
-            text-align: center;
-            margin: 20px 0;
-        }
-        .error {
-            background: #1a0000;
-            border: 1px solid #ff0000;
-            color: #ff0000;
-            padding: 15px;
-            margin: 20px 0;
-            display: none;
-        }
-        label {
-            display: block;
-            margin-top: 10px;
-            font-size: 0.9em;
-        }
-        a { color: #00ff00; }
-    </style>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <div class="container">
@@ -105,7 +13,7 @@
         <div class="warning">
             <strong>SECURITY NOTICE</strong><br>
             For maximum anonymity:
-            <ul style="margin-left: 20px; margin-top: 10px;">
+            <ul>
                 <li>Access this service over Tor</li>
                 <li>Do not include identifying information in files</li>
                 <li>Files are stored encrypted</li>
@@ -135,7 +43,7 @@
             <div class="receipt-code" id="receiptCode"></div>
             <label>File SHA-256:</label>
             <div class="receipt-code" id="fileHashCode"></div>
-            <p style="margin-top: 10px;">
+            <p class="receipt-hint">
                 <small>Save both the drop ID and receipt. Both are required for retrieval.</small>
             </p>
         </div>
@@ -147,109 +55,13 @@
                 <input type="text" id="retrieveId" class="text-input" placeholder="32-character hex ID" required>
                 <label>Receipt:</label>
                 <input type="text" id="retrieveReceipt" class="text-input" placeholder="HMAC receipt code" required>
-                <button type="submit" style="margin-top: 10px;">RETRIEVE</button>
+                <button type="submit" class="retrieve-button">RETRIEVE</button>
             </form>
         </div>
 
         <div class="error" id="retrieveError"></div>
     </div>
 
-    <script>
-        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const fileInput = document.getElementById('fileInput');
-            const spinner = document.getElementById('uploadSpinner');
-            const receipt = document.getElementById('receipt');
-            const error = document.getElementById('uploadError');
-
-            if (!fileInput.files[0]) {
-                error.textContent = 'Please select a file';
-                error.style.display = 'block';
-                return;
-            }
-
-            receipt.style.display = 'none';
-            error.style.display = 'none';
-            spinner.style.display = 'block';
-
-            const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
-
-            try {
-                const response = await fetch('/submit', {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-Dead-Drop-Upload': 'true'
-                    }
-                });
-
-                spinner.style.display = 'none';
-
-                if (!response.ok) {
-                    throw new Error('Upload failed');
-                }
-
-                const data = await response.json();
-
-                document.getElementById('dropIdCode').textContent = data.drop_id;
-                document.getElementById('receiptCode').textContent = data.receipt;
-                document.getElementById('fileHashCode').textContent = data.file_hash;
-                receipt.style.display = 'block';
-
-                fileInput.value = '';
-
-            } catch (err) {
-                spinner.style.display = 'none';
-                error.textContent = 'Upload failed: ' + err.message;
-                error.style.display = 'block';
-            }
-        });
-
-        document.getElementById('retrieveForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const dropId = document.getElementById('retrieveId').value.trim();
-            const receiptCode = document.getElementById('retrieveReceipt').value.trim();
-            const error = document.getElementById('retrieveError');
-            error.style.display = 'none';
-
-            if (!dropId || !receiptCode) {
-                error.textContent = 'Both drop ID and receipt are required';
-                error.style.display = 'block';
-                return;
-            }
-
-            try {
-                const response = await fetch('/retrieve?id=' + encodeURIComponent(dropId) + '&receipt=' + encodeURIComponent(receiptCode));
-
-                if (!response.ok) {
-                    throw new Error('Retrieval failed - check your drop ID and receipt');
-                }
-
-                const disposition = response.headers.get('Content-Disposition');
-                let filename = 'download';
-                if (disposition) {
-                    const match = disposition.match(/filename="?([^"]+)"?/);
-                    if (match) filename = match[1];
-                }
-
-                const blob = await response.blob();
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-
-            } catch (err) {
-                error.textContent = err.message;
-                error.style.display = 'block';
-            }
-        });
-    </script>
+    <script src="/static/app.js"></script>
 </body>
 </html>
