@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Penetration testing scope, test environment setup, and remediation timeline template (`docs/PENTEST_SCOPE.md`) (closes #10)
+
+### Fixed
+- License reference in README corrected from MIT to Apache 2.0
+
 ## [0.8.0] - 2026-02-15
 
 ### Added
