@@ -3,7 +3,7 @@
 # Server settings
 server:
   # Address to listen on
-  listen: ":8080"
+  listen: "127.0.0.1:8080"
 
   # Storage directory for encrypted drops
   storage_dir: "./drops"
@@ -53,6 +53,12 @@ security:
   # honeypots_enabled: true
   # honeypot_count: 5
   # alert_webhook: "https://your-webhook-endpoint.example.com/alert"
+
+  # Tor-only mode: reject connections not originating from loopback (127.0.0.1/::1).
+  # Enable when running as a Tor hidden service to ensure only Tor-forwarded traffic
+  # is accepted. If the listen address binds all interfaces, it will be overridden
+  # to 127.0.0.1.
+  # tor_only: false
 
 # Logging settings
 logging:

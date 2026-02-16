@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Tor-only mode (`tor_only` config / `-tor-only` flag) rejects non-loopback connections for hidden service deployments (closes #6)
+- Tor hidden service setup documentation (`deploy/tor-hidden-service.md`)
+
+### Changed
+- Default listen address changed from `:8080` to `127.0.0.1:8080` for safer defaults
+
 ## [0.5.0] - 2026-02-15
 
 ### Added

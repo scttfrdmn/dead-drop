@@ -42,6 +42,7 @@ type SecurityConfig struct {
 	HoneypotsEnabled    bool    `yaml:"honeypots_enabled"`
 	HoneypotCount       int     `yaml:"honeypot_count"`
 	AlertWebhook        string  `yaml:"alert_webhook"`
+	TorOnly             bool    `yaml:"tor_only"`
 }
 
 // LoggingConfig holds logging settings
@@ -56,7 +57,7 @@ type LoggingConfig struct {
 func DefaultConfig() *Config {
 	return &Config{
 		Server: ServerConfig{
-			Listen:      ":8080",
+			Listen:      "127.0.0.1:8080",
 			StorageDir:  "./drops",
 			MaxUploadMB: 100,
 		},

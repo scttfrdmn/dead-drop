@@ -11,6 +11,7 @@ import (
 	"io"
 	"log"
 	"math/big"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -40,6 +41,7 @@ type Server struct {
 func main() {
 	configPath := flag.String("config", "", "Path to config file (YAML)")
 	logDir := flag.String("log-dir", "", "Directory for log output (e.g., tmpfs mount for ephemeral logs)")
+	torOnly := flag.Bool("tor-only", false, "Reject non-loopback connections (for Tor hidden service deployments)")
 	flag.Parse()
 
 	// Load configuration
@@ -56,9 +58,21 @@ func main() {
 		cfg = config.DefaultConfig()
 	}
 
-	// CLI flag overrides config file
+	// CLI flags override config file
 	if *logDir != "" {
 		cfg.Logging.LogDir = *logDir
+	}
+	if *torOnly {
+		cfg.Security.TorOnly = true
+	}
+
+	// When tor_only is enabled, force listen address to loopback if binding all interfaces
+	if cfg.Security.TorOnly {
+		host, port, err := net.SplitHostPort(cfg.Server.Listen)
+		if err == nil && host == "" {
+			cfg.Server.Listen = "127.0.0.1:" + port
+			log.Printf("WARNING: tor_only enabled — listen address overridden to %s", cfg.Server.Listen)
+		}
 	}
 
 	// Set up log file if log directory is configured
@@ -159,10 +173,16 @@ func main() {
 	}
 	limiter := ratelimit.NewLimiter(rateLimit, 1*time.Minute)
 
+	// Optional Tor-only middleware wrapper
+	wrap := func(h http.HandlerFunc) http.HandlerFunc { return h }
+	if cfg.Security.TorOnly {
+		wrap = server.torOnlyMiddleware
+	}
+
 	// Routes with rate limiting and security headers
-	mux.HandleFunc("/", server.securityHeaders(server.handleIndex))
-	mux.HandleFunc("/submit", server.securityHeaders(limiter.Middleware(server.handleSubmit)))
-	mux.HandleFunc("/retrieve", server.securityHeaders(limiter.Middleware(server.handleRetrieve)))
+	mux.HandleFunc("/", wrap(server.securityHeaders(server.handleIndex)))
+	mux.HandleFunc("/submit", wrap(server.securityHeaders(limiter.Middleware(server.handleSubmit))))
+	mux.HandleFunc("/retrieve", wrap(server.securityHeaders(limiter.Middleware(server.handleRetrieve))))
 
 	if cfg.Logging.Startup {
 		log.Printf("Dead drop server starting on %s", cfg.Server.Listen)
@@ -170,6 +190,7 @@ func main() {
 		log.Printf("Max upload size: %d MB", cfg.Server.MaxUploadMB)
 		log.Printf("Delete after retrieve: %v", cfg.Security.DeleteAfterRetrieve)
 		log.Printf("Secure delete: %v", cfg.Security.SecureDelete)
+		log.Printf("Tor-only mode: %v", cfg.Security.TorOnly)
 	}
 
 	srv := &http.Server{
@@ -188,6 +209,23 @@ func main() {
 		log.Fatal(srv.ListenAndServeTLS(cfg.Server.TLS.CertFile, cfg.Server.TLS.KeyFile))
 	} else {
 		log.Fatal(srv.ListenAndServe())
+	}
+}
+
+// torOnlyMiddleware rejects connections not originating from a loopback address.
+func (s *Server) torOnlyMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		host, _, err := net.SplitHostPort(r.RemoteAddr)
+		if err != nil {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+		ip := net.ParseIP(host)
+		if ip == nil || !ip.IsLoopback() {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+		next(w, r)
 	}
 }
 
