@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- OpenSSF Scorecard CI workflow with SARIF upload to GitHub Security tab
+- CodeQL analysis CI workflow for Go with SARIF upload to GitHub Security tab
+- Dependency Review CI workflow for pull requests (fails on moderate+ severity)
+- Semgrep SAST CI workflow with auto rules and SARIF upload to GitHub Security tab
+
 ## [0.9.0] - 2026-02-15
 
 ### Added
