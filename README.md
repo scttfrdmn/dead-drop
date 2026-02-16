@@ -1,6 +1,9 @@
 # Dead Drop
 
 [![CI](https://github.com/scttfrdmn/dead-drop/actions/workflows/ci.yml/badge.svg)](https://github.com/scttfrdmn/dead-drop/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/scttfrdmn/dead-drop/actions/workflows/codeql.yml/badge.svg)](https://github.com/scttfrdmn/dead-drop/actions/workflows/codeql.yml)
+[![Semgrep](https://github.com/scttfrdmn/dead-drop/actions/workflows/semgrep.yml/badge.svg)](https://github.com/scttfrdmn/dead-drop/actions/workflows/semgrep.yml)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/scttfrdmn/dead-drop/badge)](https://securityscorecards.dev/viewer/?uri=github.com/scttfrdmn/dead-drop)
 [![Go Report Card](https://goreportcard.com/badge/github.com/scttfrdmn/dead-drop)](https://goreportcard.com/report/github.com/scttfrdmn/dead-drop)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
