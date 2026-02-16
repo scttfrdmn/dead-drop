@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- Cleanup interval now includes random jitter (+/- 10 minutes) to prevent timing analysis (closes #4)
+
 ## [0.4.0] - 2026-02-15
 
 ### Added

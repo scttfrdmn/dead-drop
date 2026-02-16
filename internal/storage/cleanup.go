@@ -1,7 +1,9 @@
 package storage
 
 import (
+	"crypto/rand"
 	"log"
+	"math/big"
 	"os"
 	"strings"
 	"time"
@@ -14,16 +16,29 @@ type CleanupConfig struct {
 	DeleteOnRetrieve bool
 }
 
-// StartCleanup begins periodic cleanup of expired drops
+// StartCleanup begins periodic cleanup of expired drops with random jitter
+// to prevent timing analysis. Each cycle sleeps for the check interval
+// plus a random jitter of +/- 10 minutes.
 func (m *Manager) StartCleanup(config CleanupConfig) {
-	ticker := time.NewTicker(config.CheckInterval)
 	go func() {
-		for range ticker.C {
+		for {
+			sleep := config.CheckInterval + cleanupJitter()
+			time.Sleep(sleep)
 			if err := m.cleanupExpiredDrops(config.MaxAge); err != nil {
 				log.Printf("Cleanup error: %v", err)
 			}
 		}
 	}()
+}
+
+// cleanupJitter returns a random duration between -10 and +10 minutes.
+func cleanupJitter() time.Duration {
+	// Generate 0..20 minutes, then subtract 10 to get -10..+10
+	n, err := rand.Int(rand.Reader, big.NewInt(20*60))
+	if err != nil {
+		return 0
+	}
+	return time.Duration(n.Int64()-10*60) * time.Second
 }
 
 // cleanupExpiredDrops removes drops older than maxAge
