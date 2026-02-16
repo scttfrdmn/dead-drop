@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Comprehensive test suite with 176 unit tests and 3 fuzz targets across 14 new test files (closes #8)
+- Security tests for path traversal prevention, AAD mismatch detection, executable blocking, CSRF enforcement, and HMAC receipt validation
+- Fuzz targets for `EncryptDecrypt`, `ValidateFile`, and `ValidateDropID`
+- Integration tests for full upload/retrieve/delete flows including quota enforcement and delete-after-retrieve
+- Test coverage improved from ~25% to 86% overall; config 93%, validation 93%, metadata 94%, monitoring 100%
+
 ## [0.7.0] - 2026-02-15
 
 ### Added
