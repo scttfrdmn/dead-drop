@@ -372,7 +372,7 @@ func (s *Server) handleStatic() http.HandlerFunc {
 			w.Header().Set("Content-Type", "application/octet-stream")
 		}
 
-		_, _ = w.Write(data)
+		_, _ = w.Write(data) // #nosec G705 -- data is from embedded filesystem, not user input
 	}
 }
 
