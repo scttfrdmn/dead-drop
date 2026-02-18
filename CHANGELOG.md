@@ -7,27 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-02-17
+
 ### Added
 - Graceful shutdown on SIGINT/SIGTERM with 30-second timeout for in-flight requests (closes #25)
 - OpenSSF Scorecard CI workflow with SARIF upload to GitHub Security tab
 - CodeQL analysis CI workflow for Go with SARIF upload to GitHub Security tab
 - Dependency Review CI workflow for pull requests (fails on moderate+ severity)
 - Semgrep SAST CI workflow with auto rules and SARIF upload to GitHub Security tab
+- Multi-stage Dockerfile with distroless runtime image (closes #29)
+- `DEAD_DROP_KEY` environment variable support for client encryption key (closes #28)
+
+### Changed
+- Retrieve endpoint changed from GET to POST to prevent credential leakage via URL query strings in proxy logs and browser history (closes #24)
+
+### Removed
+- Removed insecure `-key` CLI flag that exposed encryption keys in process list; use `-key-file` or `DEAD_DROP_KEY` env var instead (closes #28)
+- Removed legacy plaintext metadata support; only encrypted JSON envelope format is accepted (closes #21)
 
 ### Security
 - Tightened Content-Security-Policy from `unsafe-inline` to `self` by extracting inline JS and CSS into external files (closes #19)
 - Fixed TOCTOU race condition in cleanup where expired drops could be deleted during active retrieval (closes #20)
-- Removed legacy plaintext metadata support; only encrypted JSON envelope format is accepted (closes #21)
 - Docker Compose now binds port to localhost only, preventing exposure on public interfaces (closes #22)
 - Sanitize uploaded filename at point of entry before storing in metadata (closes #23)
-- Retrieve endpoint changed from GET to POST to prevent credential leakage via URL query strings in proxy logs and browser history (closes #24)
 - Log warning at startup when master key encryption is not configured (closes #26)
 - Added AAD context binding to key file encryption (prevents swap of encryption/receipt keys) and metadata encryption (binds to drop ID) (closes #27)
-- Added `DEAD_DROP_KEY` environment variable support for client encryption key (closes #28)
-- Added multi-stage Dockerfile with distroless runtime image (closes #29)
-
-### Removed
-- Removed insecure `-key` CLI flag that exposed encryption keys in process list; use `-key-file` or `DEAD_DROP_KEY` env var instead (closes #28)
 
 ## [0.9.0] - 2026-02-15
 
@@ -155,7 +159,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secure key input via `-key-file` flag
 - Configuration via YAML file
 
-[Unreleased]: https://github.com/scttfrdmn/dead-drop/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/scttfrdmn/dead-drop/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/scttfrdmn/dead-drop/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/scttfrdmn/dead-drop/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/scttfrdmn/dead-drop/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/scttfrdmn/dead-drop/compare/v0.6.0...v0.7.0
