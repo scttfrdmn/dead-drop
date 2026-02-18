@@ -45,11 +45,10 @@ func main() {
 	flag.StringVar(&config.FilePath, "file", "", "File to submit (required unless -generate-key)")
 	flag.BoolVar(&config.ScrubMetadata, "scrub-metadata", true, "Strip EXIF/metadata before upload (recommended)")
 	flag.BoolVar(&config.EncryptClient, "encrypt", false, "Encrypt file client-side before upload")
-	keyFile := flag.String("key-file", "", "Read encryption key from file (recommended over -key)")
-	flag.StringVar(&config.EncryptionKey, "key", "", "Encryption key (base64) - INSECURE: visible in process list, use -key-file instead")
+	keyFile := flag.String("key-file", "", "Read encryption key from file (or set DEAD_DROP_KEY env var)")
 	flag.Parse()
 
-	// SECURITY: Read key from file instead of command-line args
+	// Load encryption key from file or environment variable
 	if *keyFile != "" {
 		keyData, err := os.ReadFile(*keyFile)
 		if err != nil {
@@ -57,6 +56,8 @@ func main() {
 			os.Exit(1)
 		}
 		config.EncryptionKey = strings.TrimSpace(string(keyData))
+	} else if envKey := os.Getenv("DEAD_DROP_KEY"); envKey != "" {
+		config.EncryptionKey = envKey
 	}
 
 	// Handle key generation
@@ -75,7 +76,7 @@ func main() {
 	}
 
 	if config.EncryptClient && config.EncryptionKey == "" {
-		fmt.Fprintf(os.Stderr, "Error: -key is required when using -encrypt\n")
+		fmt.Fprintf(os.Stderr, "Error: -key-file or DEAD_DROP_KEY env var is required when using -encrypt\n")
 		flag.Usage()
 		os.Exit(1)
 	}
@@ -202,9 +203,8 @@ func submitFile(config Config) error {
 	fmt.Printf("  %s\n", submitResp.Receipt)
 	fmt.Println("\nFile SHA-256:")
 	fmt.Printf("  %s\n", submitResp.FileHash)
-	fmt.Printf("\nRetrieve URL:\n  %s/retrieve?id=%s&receipt=%s\n",
-		config.ServerURL, submitResp.DropID, submitResp.Receipt)
 	fmt.Println("\nSave the drop ID and receipt - both are needed for retrieval.")
+	fmt.Println("Retrieve via the web UI or POST to /retrieve with id and receipt parameters.")
 
 	return nil
 }

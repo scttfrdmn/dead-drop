@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Retrieve endpoint changed from GET to POST to prevent credential leakage via URL query strings in proxy logs and browser history (closes #24)
 - Log warning at startup when master key encryption is not configured (closes #26)
 - Added AAD context binding to key file encryption (prevents swap of encryption/receipt keys) and metadata encryption (binds to drop ID) (closes #27)
+- Added `DEAD_DROP_KEY` environment variable support for client encryption key (closes #28)
+
+### Removed
+- Removed insecure `-key` CLI flag that exposed encryption keys in process list; use `-key-file` or `DEAD_DROP_KEY` env var instead (closes #28)
 
 ## [0.9.0] - 2026-02-15
 
